@@ -143,3 +143,50 @@ def build_project_cashflows(df, project_code, discount_rate=0.10, benefit_multip
 
     npv = sum(cf / ((1 + discount_rate) ** i) for i, cf in enumerate(cashflows)**_
 
+def build_quarterly_depreciation(df):
+    """
+    Build quarterly straight-line depreciation schedule.
+
+    Output columns:
+    - Project_Code
+    - Program_Name
+    - Asset_ID
+    - Year
+    - Quarter
+    - Period (YYYYQn)
+    - Depreciation_USD
+    """
+    records = []
+
+    for _, row in df.iterrows():
+        total_cost = row["Total_Cost_USD"]
+        dep_years = int(row["Depreciation_Years"])
+        ramp_year = int(row["Ramp_Start_Quarter_Year"])
+        ramp_q = int(row["Ramp_Start_Quarter_Num"])
+
+        total_quarters = dep_years * 4
+        quarterly_dep = total_cost / total_quarters
+
+        year = ramp_year
+        quarter = ramp_q
+
+        for _ in range(total_quarters):
+            period_str = f"{year}Q{quarter}"
+
+            records.append({
+                "Project_Code": row["Project_Code"],
+                "Program_Name": row["Program_Name"],
+                "Asset_ID": row["Asset_ID"],
+                "Year": year,
+                "Quarter": quarter,
+                "Period": pd.Period(period_str, freq="Q"),
+                "Depreciation_USD": quarterly_dep
+            })
+
+            # Advance quarter
+            quarter += 1
+            if quarter > 4:
+                quarter = 1
+                year += 1
+
+    return pd.DataFrame(records)

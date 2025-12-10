@@ -7,18 +7,16 @@ import streamlit as st
 import altair as alt
 
 # ---------------------------------------------------------
-# Page config
-# ---------------------------------------------------------
-st.set_page_config(
-    page_title="CapEx Forecasting Engine",
-    page_icon="📈",
-    layout="wide",
-)
-
-# ---------------------------------------------------------
-# Path setup so we can import src.helpers
+# Resolve repo root so we can import src.helpers
+# Works both locally and on Streamlit Cloud
 # ---------------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent
+
+# If we're inside an /app.py subfolder (Streamlit deploy),
+# step one level up until we find "src"
+if not (BASE_DIR / "src").exists():
+    BASE_DIR = BASE_DIR.parent
+
 sys.path.append(str(BASE_DIR))
 
 from src.helpers import (
@@ -318,3 +316,4 @@ with tab_data:
         file_name="capex_filtered_export.csv",
         mime="text/csv",
     )
+

@@ -6,19 +6,12 @@ import pandas as pd
 import streamlit as st
 import altair as alt
 
-# ---------------------------------------------------------
-# Page config
-# ---------------------------------------------------------
-st.set_page_config(
-    page_title="CapEx Forecasting Engine",
-    page_icon="📈",
-    layout="wide",
-)
-
-# ---------------------------------------------------------
-# Path setup so we can import src.helpers
-# ---------------------------------------------------------
+# ---------- Path setup so we can import src.helpers ----------
 BASE_DIR = Path(__file__).resolve().parent
+
+# BASE_DIR should now be the repo root:
+# /mount/src/capex-forecasting-engine
+# And src/ should live directly under it.
 sys.path.append(str(BASE_DIR))
 
 from src.helpers import (
@@ -317,4 +310,5 @@ with tab_data:
         data=csv_bytes,
         file_name="capex_filtered_export.csv",
         mime="text/csv",
+
     )

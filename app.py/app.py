@@ -4,6 +4,16 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import streamlit as st
+import altair as alt
+
+# ---------------------------------------------------------
+# Page config
+# ---------------------------------------------------------
+st.set_page_config(
+    page_title="CapEx Forecasting Engine",
+    page_icon="📈",
+    layout="wide",
+)
 
 # ---------------------------------------------------------
 # Path setup so we can import src.helpers
@@ -40,11 +50,13 @@ df, summaries, quarterly_capex, dep_schedule, q_dep, annual_dep_by_program = loa
 # ---------------------------------------------------------
 # Sidebar Filters
 # ---------------------------------------------------------
-st.sidebar.title("CapEx Filters")
+st.sidebar.markdown("### ⚙️ Controls")
 
 scenarios = sorted(df["Scenario"].dropna().unique().tolist())
 selected_scenarios = st.sidebar.multiselect(
-    "Scenario", options=scenarios, default=scenarios
+    "Scenario(s)",
+    options=scenarios,
+    default=scenarios,
 )
 
 programs = (
@@ -57,18 +69,25 @@ program_labels = [
 ]
 program_code_map = dict(zip(program_labels, programs["Project_Code"]))
 selected_program_labels = st.sidebar.multiselect(
-    "Programs", options=program_labels, default=program_labels
+    "Programs",
+    options=program_labels,
+    default=program_labels,
 )
 
 selected_program_codes = [program_code_map[l] for l in selected_program_labels]
 
 discount_rate = st.sidebar.slider(
-    "Discount rate (for NPV/IRR)", min_value=0.05, max_value=0.20, value=0.10, step=0.01
+    "Discount rate (for NPV/IRR)",
+    min_value=0.05,
+    max_value=0.20,
+    value=0.10,
+    step=0.01,
 )
 
 project_codes = sorted(df["Project_Code"].dropna().unique().tolist())
 selected_project_for_cashflow = st.sidebar.selectbox(
-    "Project for cashflow / NPV view", options=project_codes
+    "Project for cashflow / NPV",
+    options=project_codes,
 )
 
 # Filter df
@@ -80,107 +99,194 @@ df_filtered = df[mask].copy()
 # ---------------------------------------------------------
 # Header
 # ---------------------------------------------------------
-st.title("📈 CapEx Forecasting Engine Dashboard")
-st.caption("Driver-based CapEx planning & depreciation model — powered by Python (Streamlit).")
+st.title("📈 CapEx Forecasting Engine")
+st.caption(
+    "Driver-based CapEx planning, scenario modeling, and depreciation analytics — backed by Python."
+)
 
 if df_filtered.empty:
     st.warning("No data for the selected filters. Try selecting more scenarios/programs.")
     st.stop()
 
 # ---------------------------------------------------------
-# Top KPIs
+# Top KPI Strip
 # ---------------------------------------------------------
 total_capex = df_filtered["Total_Cost_USD"].sum()
 capex_by_scenario = (
     df_filtered.groupby("Scenario")["Total_Cost_USD"].sum().sort_values(ascending=False)
 )
+top_scenario = capex_by_scenario.index[0]
+top_scenario_value = capex_by_scenario.iloc[0]
 
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 col1.metric("Total CapEx (filtered)", f"${total_capex:,.0f}")
 col2.metric("Programs (filtered)", f"{df_filtered['Project_Code'].nunique()}")
 col3.metric("Assets (filtered)", f"{df_filtered['Asset_ID'].nunique()}")
-
-st.subheader("CapEx by Scenario (Filtered)")
-st.dataframe(capex_by_scenario.rename("Total_Cost_USD").to_frame())
-
-# ---------------------------------------------------------
-# Quarterly CapEx chart
-# ---------------------------------------------------------
-st.subheader("Quarterly CapEx Spend by Scenario")
-
-qc = quarterly_capex.copy()
-qc = qc[qc["Scenario"].isin(selected_scenarios)]
-qc["Order_Period_Str"] = qc["Order_Period"].astype(str)
-
-pivot_qc = (
-    qc.pivot(index="Order_Period_Str", columns="Scenario", values="Total_Cost_USD")
-    .fillna(0)
-    .sort_index()
+col4.metric(
+    "Top Scenario by Spend",
+    top_scenario,
+    f"${top_scenario_value:,.0f}",
 )
 
-st.line_chart(pivot_qc)
-
 # ---------------------------------------------------------
-# Annual Depreciation by Program
+# Tabs Layout
 # ---------------------------------------------------------
-st.subheader("Annual Depreciation by Program")
+tab_overview, tab_dep, tab_data = st.tabs(
+    ["📊 Overview", "📉 Depreciation & NPV", "📂 Data Explorer"]
+)
 
-adp = annual_dep_by_program[
-    annual_dep_by_program["Project_Code"].isin(selected_program_codes)
-].copy()
+# =========================================================
+# TAB 1: OVERVIEW
+# =========================================================
+with tab_overview:
+    st.subheader("Quarterly CapEx by Scenario")
 
-if adp.empty:
-    st.info("No depreciation schedule for selected filters.")
-else:
-    adp["Program_Label"] = adp["Project_Code"] + " — " + adp["Program_Name"].astype(str)
-    pivot_dep = (
-        adp.pivot(index="Year", columns="Program_Label", values="Annual_Depreciation_USD")
-        .fillna(0)
-        .sort_index()
+    qc = quarterly_capex.copy()
+    qc = qc[qc["Scenario"].isin(selected_scenarios)].copy()
+
+    # Turn Order_Period (period type) into nice string labels
+    qc["Order_Period_Str"] = qc["Order_Period"].astype(str)
+
+    capex_chart = (
+        alt.Chart(qc)
+        .mark_line(point=True)
+        .encode(
+            x=alt.X(
+                "Order_Period_Str:N",
+                title="Order Quarter",
+                sort=sorted(qc["Order_Period_Str"].unique()),
+            ),
+            y=alt.Y(
+                "Total_Cost_USD:Q",
+                title="CapEx Spend (USD)",
+            ),
+            color=alt.Color("Scenario:N", title="Scenario"),
+            tooltip=[
+                "Scenario",
+                "Order_Period_Str",
+                alt.Tooltip("Total_Cost_USD:Q", title="CapEx (USD)", format=",.0f"),
+            ],
+        )
+        .properties(height=350)
+        .interactive()
     )
-    st.line_chart(pivot_dep)
 
-    st.caption("Underlying table:")
-    st.dataframe(adp.sort_values(["Project_Code", "Year"]))
+    st.altair_chart(capex_chart, use_container_width=True)
 
-# ---------------------------------------------------------
-# Cashflow, NPV, IRR
-# ---------------------------------------------------------
-st.subheader("Project Cashflow, NPV & IRR")
-
-try:
-    proj_results = build_project_cashflows(
-        df, project_code=selected_project_for_cashflow, discount_rate=discount_rate
+    st.markdown("#### CapEx by Scenario (Summary)")
+    st.dataframe(
+        capex_by_scenario.rename("Total_Cost_USD").to_frame(),
+        use_container_width=True,
     )
 
-    cf_df = pd.DataFrame(
-        {
-            "Year": proj_results["years"],
-            "Cashflow_USD": proj_results["cashflows"],
-        }
+# =========================================================
+# TAB 2: DEPRECIATION & NPV
+# =========================================================
+with tab_dep:
+    left, right = st.columns([1.4, 1])
+
+    with left:
+        st.markdown("### Annual Depreciation by Program")
+
+        adp = annual_dep_by_program[
+            annual_dep_by_program["Project_Code"].isin(selected_program_codes)
+        ].copy()
+
+        if adp.empty:
+            st.info("No depreciation schedule for selected filters.")
+        else:
+            adp["Program_Label"] = (
+                adp["Project_Code"] + " — " + adp["Program_Name"].astype(str)
+            )
+
+            dep_chart = (
+                alt.Chart(adp)
+                .mark_bar()
+                .encode(
+                    x=alt.X("Year:O", title="Year"),
+                    y=alt.Y(
+                        "Annual_Depreciation_USD:Q",
+                        title="Annual Depreciation (USD)",
+                    ),
+                    color=alt.Color("Program_Label:N", title="Program"),
+                    tooltip=[
+                        "Year",
+                        "Program_Label",
+                        alt.Tooltip(
+                            "Annual_Depreciation_USD:Q",
+                            title="Depreciation (USD)",
+                            format=",.0f",
+                        ),
+                    ],
+                )
+                .properties(height=350)
+                .interactive()
+            )
+
+            st.altair_chart(dep_chart, use_container_width=True)
+
+            with st.expander("See depreciation table"):
+                st.dataframe(
+                    adp.sort_values(["Project_Code", "Year"]),
+                    use_container_width=True,
+                )
+
+    with right:
+        st.markdown("### Project Cashflows, NPV & IRR")
+
+        try:
+            proj_results = build_project_cashflows(
+                df, project_code=selected_project_for_cashflow, discount_rate=discount_rate
+            )
+
+            cf_df = pd.DataFrame(
+                {
+                    "Year": proj_results["years"],
+                    "Cashflow_USD": proj_results["cashflows"],
+                }
+            )
+
+            c1, c2 = st.columns(2)
+            c1.metric(
+                f"NPV @ {proj_results['discount_rate']:.0%}",
+                f"${proj_results['npv']:,.0f}",
+            )
+            irr_val = proj_results["irr"]
+            irr_text = "N/A" if irr_val is None or np.isnan(irr_val) else f"{irr_val:.2%}"
+            c2.metric("IRR", irr_text)
+
+            cashflow_chart = (
+                alt.Chart(cf_df)
+                .mark_bar()
+                .encode(
+                    x=alt.X("Year:O", title="Year"),
+                    y=alt.Y("Cashflow_USD:Q", title="Cashflow (USD)"),
+                    tooltip=[
+                        "Year",
+                        alt.Tooltip("Cashflow_USD:Q", title="Cashflow (USD)", format=",.0f"),
+                    ],
+                )
+                .properties(height=250)
+            )
+
+            st.altair_chart(cashflow_chart, use_container_width=True)
+
+            with st.expander("See cashflow table"):
+                st.dataframe(cf_df, use_container_width=True)
+
+        except Exception as e:
+            st.error(f"Could not compute cashflows for {selected_project_for_cashflow}: {e}")
+
+# =========================================================
+# TAB 3: DATA EXPLORER
+# =========================================================
+with tab_data:
+    st.subheader("Filtered CapEx Lines")
+
+    st.caption(
+        "Granular view of the filtered portfolio — useful for export, QA, or detailed analysis."
     )
 
-    c1, c2 = st.columns(2)
-    c1.metric(
-        f"NPV @ {proj_results['discount_rate']:.0%}",
-        f"${proj_results['npv']:,.0f}",
-    )
-    irr_val = proj_results["irr"]
-    irr_text = "N/A" if irr_val is None or np.isnan(irr_val) else f"{irr_val:.2%}"
-    c2.metric("IRR", irr_text)
-
-    st.bar_chart(cf_df.set_index("Year")["Cashflow_USD"])
-
-    st.caption("Cashflow table:")
-    st.dataframe(cf_df)
-
-except Exception as e:
-    st.error(f"Could not compute cashflows for {selected_project_for_cashflow}: {e}")
-
-# ---------------------------------------------------------
-# Raw data (expandable)
-# ---------------------------------------------------------
-with st.expander("🔍 See raw filtered CapEx lines"):
     st.dataframe(
         df_filtered[
             [
@@ -200,5 +306,15 @@ with st.expander("🔍 See raw filtered CapEx lines"):
                 "Total_Cost_USD",
                 "Depreciation_Years",
             ]
-        ].sort_values(["Project_Code", "Scenario", "Asset_ID"])
+        ].sort_values(["Project_Code", "Scenario", "Asset_ID"]),
+        use_container_width=True,
+    )
+
+    # Optional: download filtered data as CSV
+    csv_bytes = df_filtered.to_csv(index=False).encode("utf-8")
+    st.download_button(
+        label="⬇️ Download filtered dataset as CSV",
+        data=csv_bytes,
+        file_name="capex_filtered_export.csv",
+        mime="text/csv",
     )

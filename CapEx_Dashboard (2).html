@@ -1,0 +1,1402 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CapEx Engine Dashboard</title>
+  <style>
+    :root{
+      --bg0:#070a12;
+      --bg1:#0b1226;
+      --card:#0f1933cc;
+      --card2:#0c142bcc;
+      --line:#26345f;
+      --text:#eef2ff;
+      --muted:#a7b0d6;
+      --accent:#7aa2ff;
+      --accent2:#42d392;
+      --warn:#ffcc66;
+      --bad:#ff6b6b;
+      --shadow: 0 18px 48px rgba(0,0,0,.5);
+      --radius: 18px;
+      --radius2: 14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(900px 700px at 10% 12%, rgba(122,162,255,.20), transparent 55%),
+        radial-gradient(820px 620px at 92% 22%, rgba(66,211,146,.14), transparent 60%),
+        radial-gradient(620px 520px at 58% 92%, rgba(255,204,102,.10), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+    }
+    /* top bar */
+    .topbar{
+      position: sticky; top:0; z-index: 30;
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 16px 18px;
+      backdrop-filter: blur(14px);
+      background: rgba(7,10,18,.68);
+      border-bottom: 1px solid rgba(38,52,95,.55);
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+    }
+    .logo{
+      width: 34px; height:34px; border-radius: 12px;
+      background: linear-gradient(135deg, rgba(122,162,255,.95), rgba(66,211,146,.65));
+      box-shadow: 0 10px 26px rgba(0,0,0,.35);
+      position: relative;
+      overflow:hidden;
+    }
+    .logo:after{
+      content:"";
+      position:absolute; inset:-30%;
+      background: radial-gradient(circle at 30% 35%, rgba(255,255,255,.55), transparent 45%);
+      transform: rotate(20deg);
+      opacity:.7;
+    }
+    .brand h1{margin:0; font-size: 15px; letter-spacing:.35px}
+    .brand .sub{margin:2px 0 0; color: var(--muted); font-size: 12px}
+    .actions{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      font-size: 12px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(38,52,95,.7);
+      background: rgba(12,20,43,.55);
+      color: var(--muted);
+    }
+    .btn{
+      border: 1px solid rgba(38,52,95,.75);
+      background: rgba(12,20,43,.55);
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-weight: 650;
+      transition: transform .08s ease, border-color .15s ease, background .15s ease;
+      display:inline-flex; align-items:center; gap:8px;
+    }
+    .btn:hover{transform: translateY(-1px); border-color: rgba(122,162,255,.75);}
+    .btn.primary{
+      background: linear-gradient(180deg, rgba(122,162,255,.95), rgba(90,120,255,.75));
+      border-color: rgba(122,162,255,.75);
+    }
+    .btn.danger{
+      background: rgba(255,107,107,.12);
+      border-color: rgba(255,107,107,.45);
+    }
+    input[type="file"]{
+      width: 210px;
+      padding: 9px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(38,52,95,.75);
+      background: rgba(12,20,43,.55);
+      color: var(--muted);
+    }
+
+    /* layout */
+    .layout{
+      display:grid;
+      grid-template-columns: 330px 1fr;
+      gap: 14px;
+      padding: 14px;
+      max-width: 1500px;
+      margin: 0 auto;
+    }
+
+    /* cards */
+    .card{
+      border-radius: var(--radius);
+      border: 1px solid rgba(38,52,95,.6);
+      background: linear-gradient(180deg, rgba(15,25,51,.86), rgba(12,20,43,.84));
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding: 14px 14px 10px;
+      display:flex; align-items:center; justify-content:space-between;
+      border-bottom: 1px solid rgba(38,52,95,.55);
+    }
+    .card .hd h2{
+      margin:0;
+      font-size: 13px;
+      letter-spacing:.25px;
+      color: #dfe6ff;
+      font-weight: 750;
+      display:flex; align-items:center; gap:8px;
+    }
+    .card .bd{padding: 14px;}
+
+    /* sidebar filters */
+    .sidebar{position: sticky; top: 72px; height: calc(100vh - 86px); overflow:auto; padding-bottom: 22px;}
+    .search{
+      margin-bottom: 10px;
+      display:flex; gap:10px; align-items:center;
+    }
+    .search input{
+      width:100%;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(38,52,95,.75);
+      background: rgba(7,10,18,.25);
+      color: var(--text);
+      outline:none;
+    }
+    .filter-group{margin-bottom: 12px;}
+    .fg-title{
+      display:flex; justify-content:space-between; align-items:center;
+      color: var(--muted);
+      font-size: 12px;
+      margin: 0 0 8px 2px;
+    }
+    .chips{display:flex; flex-wrap:wrap; gap:8px; padding-bottom: 6px;}
+    .chip{
+      display:inline-flex; align-items:center; gap:6px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(38,52,95,.65);
+      background: rgba(7,10,18,.25);
+      color: var(--text);
+      font-size: 12px;
+      cursor:pointer;
+      user-select:none;
+      transition: border-color .15s ease, transform .08s ease, background .15s ease;
+    }
+    .chip:hover{transform: translateY(-1px); border-color: rgba(122,162,255,.8);}
+    .chip.on{
+      border-color: rgba(66,211,146,.75);
+      background: rgba(66,211,146,.12);
+    }
+    .tiny{
+      font-size: 11px;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    /* main */
+    .main{display:flex; flex-direction:column; gap: 14px;}
+    .kpi-grid{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 12px;
+    }
+    .kpi{
+      border-radius: var(--radius2);
+      border: 1px solid rgba(38,52,95,.6);
+      background: rgba(7,10,18,.22);
+      padding: 14px;
+      position:relative;
+      overflow:hidden;
+    }
+    .kpi:before{
+      content:"";
+      position:absolute; inset:-30%;
+      background: radial-gradient(circle at 20% 20%, rgba(122,162,255,.18), transparent 40%);
+      opacity:.85;
+      transform: rotate(20deg);
+    }
+    .kpi > *{position:relative}
+    .kpi .label{color: var(--muted); font-size: 12px; margin-bottom: 8px;}
+    .kpi .value{font-size: 22px; font-weight: 850; letter-spacing:.25px;}
+    .kpi .delta{
+      margin-top: 8px;
+      display:flex; align-items:center; justify-content:space-between;
+      color: var(--muted);
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+    .delta .up{color: var(--accent2);}
+    .delta .down{color: var(--bad);}
+    .grid2{
+      display:grid;
+      grid-template-columns: 1.35fr .65fr;
+      gap: 14px;
+    }
+    .grid3{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .chart{
+      width:100%;
+      height: 310px;
+    }
+    .chart.sm{height: 280px;}
+    .chart.lg{height: 360px;}
+
+    /* table */
+    .table-tools{
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      flex-wrap:wrap;
+      margin-bottom: 10px;
+    }
+    .table-tools input{
+      width: 320px;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(38,52,95,.75);
+      background: rgba(7,10,18,.25);
+      color: var(--text);
+      outline:none;
+    }
+    .table-wrap{overflow:auto; border-radius: var(--radius2); border: 1px solid rgba(38,52,95,.6);}
+    table{width:100%; border-collapse: collapse; font-size: 12px;}
+    th, td{padding: 10px 10px; border-bottom: 1px solid rgba(38,52,95,.45); white-space: nowrap;}
+    th{
+      position: sticky; top: 0;
+      background: rgba(12,20,43,.98);
+      text-align:left;
+      color:#dfe6ff;
+      cursor:pointer;
+      user-select:none;
+    }
+    td{color: #eef2ff;}
+    tr:hover td{background: rgba(122,162,255,.06);}
+    .right{text-align:right; font-variant-numeric: tabular-nums;}
+    .footer{
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    }
+
+    /* responsive */
+    @media (max-width: 1100px){
+      .layout{grid-template-columns: 1fr;}
+      .sidebar{position: static; height:auto;}
+      input[type="file"]{width: 100%;}
+      .kpi-grid{grid-template-columns: repeat(2, minmax(0,1fr));}
+      .grid2{grid-template-columns: 1fr;}
+      .grid3{grid-template-columns: 1fr;}
+      .chart{height: 280px;}
+      .chart.lg{height: 320px;}
+      .table-tools input{width: 100%;}
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <h1>CapEx Engine Dashboard</h1>
+        <div class="sub">CapEx overview</div>
+      </div>
+    </div>
+    <div class="actions">
+      <div class="pill" id="contextPill">All data</div>
+<input id="fileInput" type="file" accept=".csv,text/csv" />
+      <button class="btn primary" id="loadSampleBtn" type="button">Load Sample</button>
+      <button class="btn danger" id="clearBtn" type="button">Clear Filters</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="card">
+        <div class="hd">
+          <h2>Filters</h2>
+          <div class="pill tiny" id="activeFilterPill">0 active</div>
+        </div>
+        <div class="bd">
+          <div class="search">
+            <input id="filterSearch" placeholder="Search filter values (type to narrow chips)..." />
+          </div>
+          <div id="filters"></div>
+          <div class="tiny" style="margin-top:10px; line-height:1.5">
+            Expected columns:
+            <div style="margin-top:6px; opacity:.95">
+              <span style="font-family:var(--mono)">
+                YearQuarter, Program_Name, Supplier, Asset_Class, Asset_Type, Criticality, Fab_Location, Process_Area,
+                Qty, Unit_Cost_USD, Lead_Time_Weeks, Gap_Quarters, CapEx_USD
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+      <div class="card">
+        <div class="hd">
+          <h2>KPIs</h2>
+          <div class="pill tiny" id="qPill">Latest quarter: —</div>
+        </div>
+        <div class="bd">
+          <div class="kpi-grid" id="kpiGrid"></div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="hd">
+            <h2>Total CapEx trend</h2>
+            <div class="pill tiny">Quarter →</div>
+          </div>
+          <div class="bd"><div id="chartTrend" class="chart lg"></div></div>
+        </div>
+        <div class="card">
+          <div class="hd">
+            <h2>CapEx mix by Asset Class</h2>
+            <div class="pill tiny">Stacked</div>
+          </div>
+          <div class="bd"><div id="chartStack" class="chart lg"></div></div>
+        </div>
+      </div>
+
+      <div class="grid3">
+        <div class="card">
+          <div class="hd">
+            <h2>CapEx by Program</h2>
+            <div class="pill tiny">Treemap</div>
+          </div>
+          <div class="bd"><div id="chartTree" class="chart sm"></div></div>
+        </div>
+        <div class="card">
+          <div class="hd">
+            <h2>Lead vs Unit Cost</h2>
+            <div class="pill tiny">Bubble scatter</div>
+          </div>
+          <div class="bd"><div id="chartScatter" class="chart sm"></div></div>
+        </div>
+      </div>
+
+      <div class="grid3">
+        <div class="card">
+          <div class="hd">
+            <h2>CapEx by Fab × Process</h2>
+            <div class="pill tiny">Heatmap</div>
+          </div>
+          <div class="bd"><div id="chartHeat" class="chart sm"></div></div>
+        </div>
+        <div class="card">
+          <div class="hd">
+            <h2>Top Suppliers</h2>
+            <div class="pill tiny">by CapEx & lead</div>
+          </div>
+          <div class="bd"><div id="chartSup" class="chart sm"></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="hd">
+          <h2>Detail</h2>
+          <div class="pill tiny">Sort • Search • Export</div>
+        </div>
+        <div class="bd">
+          <div class="table-tools">
+            <input id="tableSearch" placeholder="Search in table (program, supplier, fab, etc.)..." />
+            <div style="display:flex; gap:10px; flex-wrap:wrap">
+              <button class="btn" id="exportFilteredCsv" type="button">Export filtered CSV</button>
+              <button class="btn" id="exportSnapshot" type="button">Export dashboard image</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table id="dataTable"></table>
+          </div>
+          <div class="footer">
+            <div id="tableFoot">—</div>
+            <div class="tiny">Tip: click any chart item to filter. Click again to remove.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ECharts CDN (great visuals). If you need an OFFLINE bundle (no internet), tell me and I’ll package it. -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+
+  <script>
+    // ====================== Data + Helpers ======================
+    const expectedCols = [
+      "YearQuarter","Program_Name","Supplier","Asset_Class","Asset_Type","Criticality","Fab_Location","Process_Area",
+      "Qty","Unit_Cost_USD","Lead_Time_Weeks","Gap_Quarters","CapEx_USD"
+    ];
+    const numCols = new Set(["Qty","Unit_Cost_USD","Lead_Time_Weeks","Gap_Quarters","CapEx_USD"]);
+
+    const embeddedSample = `YearQuarter,Program_Name,Supplier,Asset_Class,Asset_Type,Criticality,Fab_Location,Process_Area,Qty,Unit_Cost_USD,Lead_Time_Weeks,Gap_Quarters,CapEx_USD
+2026Q2,NPI-Beta,OptiWorks,Tool,CVD,C,US-CA,Etch,1,131864.23,8.3,-0.6,131864.23
+2026Q3,NPI-Alpha,MechaFab,Tool,Chamber,B,US-CA,Litho,1,87162.64,11.9,3.9,87162.64
+2025Q1,NPI-Beta,NanoParts,Spare,ALD,B,TW-Hsinchu,Litho,1,73139.22,16.8,0.9,73139.22
+2025Q2,NPI-Alpha,DeltaSupply,Fixture,Handler,B,VN-BacNinh,Etch,4,73582.93,13.1,0.5,294331.72
+2025Q3,NPI-Beta,Foxtron,Test,Chamber,B,TW-Hsinchu,Metrology,3,76203.41,5.5,1.6,228610.23
+2025Q3,Sustaining-Gamma,MechaFab,Spare,Handler,A,US-CA,Etch,3,85873.08,19.1,1.9,257619.24
+2026Q4,NPI-Alpha,Foxtron,Test,Handler,B,US-CA,Deposition,6,86567.11,16.9,4.0,519402.66
+2026Q4,Sustaining-Gamma,OptiWorks,Test,CVD,C,TW-Hsinchu,Litho,5,21114.73,5.2,2.8,105573.65
+2025Q3,NPI-Beta,OptiWorks,Spare,Probe,B,US-TX,Metrology,4,69537.27,21.7,3.1,278149.08
+2026Q1,Ramp-Delta,NanoParts,Spare,ALD,A,US-TX,Litho,2,81753.87,5.1,3.2,163507.74
+2025Q3,Sustaining-Gamma,NanoParts,Tool,ALD,B,TW-Hsinchu,Etch,1,102402.35,14.3,2.1,102402.35
+2025Q1,Ramp-Delta,DeltaSupply,Spare,Handler,B,US-CA,Metrology,6,52849.57,7.8,3.9,317097.42
+2026Q4,NPI-Beta,Foxtron,Test,Chamber,A,US-CA,Litho,5,19364.01,13.5,-0.9,96820.05
+2025Q4,Ramp-Delta,MechaFab,Test,Metrology,B,VN-BacNinh,Deposition,1,103080.94,23.9,1.3,103080.94
+2026Q4,Sustaining-Gamma,Foxtron,Fixture,CVD,B,TW-Hsinchu,Metrology,6,26081.12,4.5,3.8,156486.72
+2026Q2,NPI-Beta,DeltaSupply,Tool,Probe,B,US-CA,Etch,2,131669.95,11.1,0.1,263339.9
+2026Q2,NPI-Beta,DeltaSupply,Fixture,Probe,A,VN-BacNinh,Litho,2,65975.54,13.3,-0.9,131951.08
+2025Q1,Sustaining-Gamma,OptiWorks,Test,ALD,B,TW-Hsinchu,Metrology,6,118660.26,23.1,0.8,711961.56
+2025Q4,NPI-Alpha,MechaFab,Spare,ALD,A,VN-BacNinh,Deposition,4,109830.31,13.1,2.2,439321.24
+2025Q2,Ramp-Delta,MechaFab,Spare,ALD,B,TW-Hsinchu,Deposition,6,52333.91,12.0,3.7,314003.46
+2025Q3,NPI-Beta,MechaFab,Tool,ALD,B,VN-BacNinh,Litho,2,97936.86,11.0,1.7,195873.72
+2025Q3,NPI-Alpha,Foxtron,Tool,Chamber,B,US-TX,Metrology,1,120635.27,8.2,0.3,120635.27
+2026Q1,NPI-Beta,DeltaSupply,Test,Metrology,B,US-TX,Deposition,6,47623.81,13.2,1.9,285742.86
+2026Q3,NPI-Beta,DeltaSupply,Fixture,Chamber,B,VN-BacNinh,Litho,5,8440.44,20.0,-0.1,42202.2
+2026Q4,NPI-Alpha,DeltaSupply,Tool,Metrology,B,VN-BacNinh,Deposition,1,42997.64,9.5,2.9,42997.64
+2026Q4,NPI-Alpha,Foxtron,Spare,Metrology,B,US-TX,Etch,4,64913.49,20.1,1.5,259653.96
+2025Q4,Sustaining-Gamma,DeltaSupply,Fixture,Probe,B,VN-BacNinh,Deposition,4,57517.23,5.5,0.2,230068.92
+2025Q2,NPI-Beta,NanoParts,Tool,Probe,A,TW-Hsinchu,Litho,2,128252.73,28.0,0.1,256505.46
+2025Q2,Ramp-Delta,OptiWorks,Fixture,Jig,C,US-TX,Metrology,5,53226.69,12.4,0.8,266133.45
+2025Q2,Sustaining-Gamma,Foxtron,Test,Chamber,B,US-CA,Metrology,3,65952.59,9.9,3.8,197857.77
+2025Q2,NPI-Beta,Foxtron,Tool,Metrology,A,US-TX,Etch,1,119778.06,25.2,2.4,119778.06
+2026Q1,Ramp-Delta,MechaFab,Spare,Jig,A,TW-Hsinchu,Deposition,6,28534.53,26.3,0.3,171207.18
+2025Q1,NPI-Alpha,NanoParts,Tool,Chamber,C,US-CA,Etch,1,70587.16,10.8,1.8,70587.16
+2026Q1,NPI-Beta,Foxtron,Fixture,CVD,C,TW-Hsinchu,Deposition,2,30598.04,10.2,0.5,61196.08
+2025Q4,Sustaining-Gamma,OptiWorks,Fixture,Metrology,A,US-CA,Etch,1,9718.77,22.4,1.8,9718.77
+2025Q4,Ramp-Delta,MechaFab,Spare,CVD,B,VN-BacNinh,Metrology,5,101476.76,11.9,1.5,507383.8
+2025Q4,NPI-Beta,NanoParts,Fixture,Probe,C,US-TX,Metrology,3,117970.78,20.7,-0.9,353912.34
+2026Q1,Ramp-Delta,MechaFab,Tool,CVD,B,VN-BacNinh,Etch,1,102696.93,4.9,-0.1,102696.93
+2026Q1,Ramp-Delta,Foxtron,Test,Metrology,C,TW-Hsinchu,Litho,1,116154.68,10.2,0.8,116154.68
+2025Q1,Sustaining-Gamma,OptiWorks,Tool,Handler,A,US-TX,Litho,1,21810.47,24.4,-0.3,21810.47
+2025Q1,Ramp-Delta,Foxtron,Test,Metrology,B,US-CA,Litho,6,107993.73,19.7,2.0,647962.38
+2026Q2,Ramp-Delta,MechaFab,Test,Jig,B,US-TX,Deposition,6,107897.54,16.5,2.7,647385.24
+2025Q3,NPI-Alpha,DeltaSupply,Fixture,CVD,A,US-TX,Etch,1,50181.25,15.6,-0.7,50181.25
+2025Q1,NPI-Beta,OptiWorks,Test,CVD,B,US-CA,Deposition,6,66910.9,18.9,1.4,401465.4
+2025Q2,Sustaining-Gamma,MechaFab,Fixture,ALD,B,VN-BacNinh,Metrology,4,16594.87,22.2,0.4,66379.48
+2025Q1,NPI-Beta,Foxtron,Fixture,Metrology,A,TW-Hsinchu,Litho,1,62031.12,16.5,3.9,62031.12
+2025Q2,NPI-Beta,OptiWorks,Test,Jig,B,VN-BacNinh,Metrology,4,93923.01,23.9,1.7,375692.04
+2026Q1,NPI-Alpha,OptiWorks,Tool,Metrology,B,VN-BacNinh,Etch,2,37802.12,22.9,0.1,75604.24
+2025Q2,NPI-Beta,DeltaSupply,Test,Metrology,A,TW-Hsinchu,Deposition,6,48901.11,16.7,3.4,293406.66
+2026Q3,NPI-Alpha,MechaFab,Tool,Handler,B,VN-BacNinh,Etch,1,65534.75,11.5,-0.4,65534.75
+2026Q2,NPI-Alpha,NanoParts,Test,Probe,B,US-TX,Deposition,6,40461.29,11.4,1.0,242767.74
+2025Q2,Sustaining-Gamma,OptiWorks,Test,Probe,A,US-CA,Deposition,6,39989.8,27.3,0.2,239938.8
+2026Q1,Ramp-Delta,DeltaSupply,Test,ALD,B,VN-BacNinh,Deposition,6,52804.67,21.5,1.8,316828.02
+2025Q4,NPI-Alpha,Foxtron,Spare,Handler,B,US-TX,Etch,4,13485.41,22.5,-0.4,53941.64
+2026Q4,Ramp-Delta,NanoParts,Test,Metrology,A,TW-Hsinchu,Metrology,6,34730.48,16.4,2.3,208382.88
+2025Q2,NPI-Beta,MechaFab,Tool,ALD,B,VN-BacNinh,Litho,2,131401.26,23.9,1.2,262802.52
+2025Q3,NPI-Beta,MechaFab,Tool,ALD,A,US-CA,Etch,1,59100.24,24.2,0.0,59100.24
+2025Q1,Ramp-Delta,OptiWorks,Spare,Jig,B,VN-BacNinh,Etch,3,92236.43,14.0,1.9,276709.29
+2026Q2,NPI-Beta,DeltaSupply,Fixture,CVD,A,US-TX,Metrology,4,80328.67,15.2,0.6,321314.68
+2025Q1,NPI-Beta,Foxtron,Spare,Jig,B,VN-BacNinh,Metrology,1,16191.44,22.6,3.6,16191.44
+2026Q4,Ramp-Delta,MechaFab,Tool,ALD,A,US-CA,Metrology,1,83721.72,5.7,2.9,83721.72
+2025Q4,NPI-Alpha,NanoParts,Fixture,Jig,A,VN-BacNinh,Deposition,1,15879.41,17.4,1.9,15879.41
+2026Q3,Sustaining-Gamma,MechaFab,Tool,CVD,B,VN-BacNinh,Etch,2,96230.97,21.7,1.4,192461.94
+2025Q4,NPI-Beta,Foxtron,Spare,Jig,B,US-CA,Deposition,2,63810.75,17.5,1.1,127621.5
+2026Q1,NPI-Beta,OptiWorks,Test,ALD,B,TW-Hsinchu,Metrology,3,84447.47,8.0,3.0,253342.41
+2025Q2,NPI-Beta,OptiWorks,Fixture,Metrology,B,US-TX,Litho,4,32801.6,19.2,0.5,131206.4
+2026Q4,NPI-Beta,MechaFab,Spare,Handler,C,US-CA,Litho,4,14088.14,4.5,2.0,56352.56
+2026Q3,NPI-Alpha,Foxtron,Fixture,Handler,B,TW-Hsinchu,Deposition,1,112338.7,10.6,-0.1,112338.7
+2026Q4,NPI-Alpha,NanoParts,Spare,Probe,B,TW-Hsinchu,Metrology,2,20203.25,5.6,-0.6,40406.5
+2026Q3,NPI-Alpha,DeltaSupply,Fixture,Handler,B,TW-Hsinchu,Metrology,1,13516.82,13.5,0.9,13516.82
+2026Q4,NPI-Beta,NanoParts,Test,Jig,C,US-CA,Metrology,2,98924.35,19.3,-0.8,197848.7
+2025Q1,Ramp-Delta,Foxtron,Tool,Metrology,A,US-CA,Etch,2,46199.09,27.8,2.1,92398.18
+2026Q1,Sustaining-Gamma,NanoParts,Test,CVD,B,US-CA,Deposition,2,20013.27,18.3,1.3,40026.54
+2026Q3,Sustaining-Gamma,OptiWorks,Spare,ALD,C,US-TX,Deposition,6,41971.26,17.8,-0.2,251827.56
+2025Q4,Sustaining-Gamma,NanoParts,Spare,Metrology,B,US-CA,Litho,4,92323.2,8.9,-0.7,369292.8
+2025Q1,Ramp-Delta,DeltaSupply,Test,ALD,C,US-CA,Deposition,3,77955.38,8.2,1.1,233866.14
+2026Q4,NPI-Beta,MechaFab,Fixture,Handler,B,US-TX,Deposition,3,40903.6,15.3,0.9,122710.8
+2026Q1,NPI-Beta,OptiWorks,Fixture,ALD,A,US-TX,Etch,5,29084.02,6.4,0.3,145420.1
+2025Q4,NPI-Beta,Foxtron,Spare,CVD,A,VN-BacNinh,Litho,4,110410.06,5.8,0.5,441640.24
+2025Q2,NPI-Alpha,MechaFab,Fixture,CVD,B,US-TX,Metrology,5,37114.2,19.6,3.7,185571.0
+2025Q2,Sustaining-Gamma,MechaFab,Tool,Metrology,A,US-CA,Litho,2,14738.92,22.4,3.6,29477.84
+2025Q1,Sustaining-Gamma,OptiWorks,Test,ALD,B,US-CA,Litho,1,97071.49,15.0,-0.7,97071.49
+2025Q2,Ramp-Delta,DeltaSupply,Fixture,Jig,B,US-TX,Metrology,6,38370.69,23.8,2.3,230224.14
+2026Q3,NPI-Alpha,NanoParts,Test,Handler,B,TW-Hsinchu,Litho,4,89539.55,8.1,-1.0,358158.2
+2025Q3,Ramp-Delta,Foxtron,Tool,Handler,B,TW-Hsinchu,Metrology,1,27068.65,5.0,-0.3,27068.65
+2026Q3,NPI-Alpha,DeltaSupply,Test,Jig,B,US-TX,Etch,3,26123.25,7.4,-0.7,78369.75
+2026Q3,Ramp-Delta,MechaFab,Test,ALD,C,US-CA,Metrology,3,13977.95,22.5,0.9,41933.85
+2025Q3,NPI-Beta,DeltaSupply,Spare,Chamber,C,VN-BacNinh,Litho,5,32431.33,12.0,1.6,162156.65
+2026Q3,Sustaining-Gamma,Foxtron,Fixture,ALD,C,US-TX,Deposition,5,102358.32,17.4,2.3,511791.6
+2026Q2,NPI-Alpha,OptiWorks,Spare,Chamber,C,TW-Hsinchu,Metrology,3,73253.96,12.5,2.3,219761.88
+2026Q4,Ramp-Delta,MechaFab,Tool,CVD,B,VN-BacNinh,Metrology,1,69652.46,16.4,3.1,69652.46
+2025Q3,Ramp-Delta,OptiWorks,Tool,CVD,A,VN-BacNinh,Etch,1,117426.7,16.9,2.3,117426.7
+2025Q1,NPI-Beta,Foxtron,Test,Probe,B,US-CA,Deposition,5,108225.16,17.1,2.9,541125.8
+2025Q1,NPI-Alpha,DeltaSupply,Tool,ALD,A,VN-BacNinh,Etch,1,101816.4,22.1,0.1,101816.4
+2026Q2,Sustaining-Gamma,MechaFab,Test,Chamber,A,VN-BacNinh,Litho,3,64248.41,26.9,0.0,192745.23
+2026Q1,NPI-Beta,NanoParts,Test,CVD,A,VN-BacNinh,Litho,6,112877.22,21.1,3.5,677263.32
+2025Q3,Sustaining-Gamma,Foxtron,Tool,Jig,C,VN-BacNinh,Deposition,2,143053.1,16.6,1.0,286106.2
+2026Q2,Sustaining-Gamma,OptiWorks,Test,Chamber,A,TW-Hsinchu,Deposition,4,33765.3,19.6,3.8,135061.2
+2026Q1,Sustaining-Gamma,NanoParts,Test,Jig,A,US-CA,Litho,2,40588.82,19.8,1.1,81177.64
+2026Q2,NPI-Alpha,MechaFab,Spare,ALD,B,US-CA,Deposition,1,8292.94,11.1,-0.5,8292.94
+2026Q2,NPI-Beta,OptiWorks,Test,Chamber,A,TW-Hsinchu,Metrology,2,23091.85,27.3,0.2,46183.7
+2025Q3,Ramp-Delta,Foxtron,Tool,Jig,A,TW-Hsinchu,Metrology,2,139583.0,6.1,3.1,279166.0
+2026Q2,Ramp-Delta,DeltaSupply,Spare,ALD,A,US-CA,Deposition,1,67531.07,14.5,0.2,67531.07
+2025Q1,NPI-Alpha,Foxtron,Fixture,ALD,B,VN-BacNinh,Litho,5,42650.84,10.0,-0.8,213254.2
+2026Q4,NPI-Alpha,OptiWorks,Spare,Jig,C,US-CA,Metrology,2,33306.22,6.1,0.2,66612.44
+2025Q1,NPI-Alpha,NanoParts,Test,Jig,A,VN-BacNinh,Etch,3,79904.36,28.0,0.1,239713.08
+2025Q1,NPI-Beta,NanoParts,Fixture,Probe,B,US-TX,Etch,2,106578.46,10.6,0.2,213156.92
+2026Q4,Ramp-Delta,DeltaSupply,Tool,Probe,A,US-TX,Etch,1,62226.07,18.8,1.8,62226.07
+2025Q3,NPI-Beta,Foxtron,Tool,CVD,A,US-TX,Etch,1,103779.43,5.5,-0.3,103779.43
+2025Q1,NPI-Alpha,Foxtron,Tool,Probe,B,TW-Hsinchu,Litho,1,127833.64,19.1,2.6,127833.64
+2026Q3,NPI-Alpha,MechaFab,Fixture,ALD,A,US-CA,Deposition,6,78813.03,16.3,-0.3,472878.18
+2025Q4,Sustaining-Gamma,NanoParts,Test,Handler,A,TW-Hsinchu,Etch,3,13421.7,23.0,3.6,40265.1
+2026Q4,Sustaining-Gamma,DeltaSupply,Tool,Probe,B,VN-BacNinh,Deposition,2,72625.76,5.0,1.8,145251.52
+2025Q2,Sustaining-Gamma,MechaFab,Spare,CVD,B,TW-Hsinchu,Deposition,1,46954.01,5.9,2.5,46954.01
+2025Q3,Ramp-Delta,DeltaSupply,Test,Probe,B,US-TX,Etch,2,113088.39,8.6,-0.2,226176.78
+2025Q2,Ramp-Delta,DeltaSupply,Tool,Jig,A,US-CA,Metrology,2,129463.53,22.7,1.1,258927.06
+2025Q1,Sustaining-Gamma,MechaFab,Test,Metrology,B,US-TX,Metrology,6,34160.46,13.2,1.7,204962.76
+2025Q1,Sustaining-Gamma,DeltaSupply,Test,Chamber,A,VN-BacNinh,Etch,2,59873.6,21.3,0.3,119747.2
+2025Q4,NPI-Beta,NanoParts,Spare,Jig,C,US-TX,Litho,3,41768.86,18.1,3.2,125306.58
+2025Q3,NPI-Beta,MechaFab,Test,Chamber,B,US-TX,Litho,3,115048.84,9.2,3.8,345146.52
+2025Q2,NPI-Beta,Foxtron,Fixture,Handler,A,US-TX,Etch,6,41309.29,11.4,-0.5,247855.74
+2025Q2,Sustaining-Gamma,MechaFab,Spare,Handler,A,VN-BacNinh,Metrology,6,32914.64,28.3,0.5,197487.84
+2025Q1,NPI-Beta,NanoParts,Spare,CVD,B,VN-BacNinh,Metrology,2,82804.32,17.0,3.4,165608.64
+2025Q4,NPI-Beta,Foxtron,Spare,Handler,A,US-CA,Metrology,2,95626.34,21.9,2.1,191252.68
+2026Q1,Ramp-Delta,OptiWorks,Spare,CVD,B,VN-BacNinh,Litho,6,44742.0,4.2,3.2,268452.0
+2025Q2,NPI-Alpha,NanoParts,Fixture,ALD,B,US-TX,Etch,1,102881.86,13.1,0.0,102881.86
+2026Q4,NPI-Alpha,NanoParts,Test,Handler,B,VN-BacNinh,Litho,6,28585.9,14.3,3.7,171515.4
+2026Q2,NPI-Alpha,NanoParts,Test,Handler,B,US-CA,Deposition,4,110528.79,16.6,2.4,442115.16
+2026Q1,NPI-Alpha,MechaFab,Test,Jig,B,US-TX,Metrology,4,31745.43,6.6,2.9,126981.72
+2025Q4,Ramp-Delta,DeltaSupply,Fixture,Probe,C,TW-Hsinchu,Metrology,4,119567.54,19.2,2.2,478270.16
+2026Q4,Sustaining-Gamma,MechaFab,Test,Jig,B,TW-Hsinchu,Metrology,6,28819.65,4.1,2.6,172917.9
+2026Q1,Sustaining-Gamma,MechaFab,Test,Metrology,B,VN-BacNinh,Deposition,6,108465.52,7.1,0.5,650793.12
+2026Q3,NPI-Alpha,Foxtron,Test,Probe,C,TW-Hsinchu,Deposition,6,9285.65,23.0,2.3,55713.9
+2026Q1,NPI-Alpha,DeltaSupply,Fixture,Probe,A,VN-BacNinh,Etch,2,31356.58,14.5,1.7,62713.16
+2025Q2,Sustaining-Gamma,MechaFab,Spare,Jig,A,US-CA,Metrology,6,106860.44,18.1,0.3,641162.64
+2025Q4,NPI-Beta,OptiWorks,Spare,Chamber,A,VN-BacNinh,Litho,6,63033.69,16.8,1.7,378202.14
+2025Q1,NPI-Beta,NanoParts,Spare,Jig,B,TW-Hsinchu,Metrology,3,55691.18,24.0,2.4,167073.54
+2025Q3,Sustaining-Gamma,Foxtron,Tool,Chamber,A,TW-Hsinchu,Deposition,2,74740.39,26.3,-0.8,149480.78
+2026Q3,NPI-Beta,NanoParts,Tool,Probe,B,TW-Hsinchu,Metrology,1,47789.9,10.8,0.3,47789.9
+2025Q1,Sustaining-Gamma,NanoParts,Test,Probe,B,TW-Hsinchu,Etch,5,46618.74,8.1,1.5,233093.7
+2025Q2,Sustaining-Gamma,MechaFab,Test,Jig,A,US-CA,Deposition,4,88939.77,26.1,1.7,355759.08
+2025Q1,Ramp-Delta,NanoParts,Tool,CVD,A,VN-BacNinh,Deposition,2,92484.37,19.8,2.5,184968.74
+2025Q2,NPI-Beta,Foxtron,Spare,Jig,B,US-CA,Litho,1,55216.0,6.0,3.7,55216.0
+2025Q1,Sustaining-Gamma,MechaFab,Test,Chamber,B,TW-Hsinchu,Litho,4,11834.97,4.4,1.8,47339.88
+2025Q1,Ramp-Delta,DeltaSupply,Tool,Probe,A,VN-BacNinh,Metrology,2,18634.21,21.1,2.0,37268.42
+2025Q3,Ramp-Delta,OptiWorks,Tool,CVD,B,US-TX,Litho,1,66988.77,4.2,2.3,66988.77
+2025Q2,NPI-Beta,Foxtron,Fixture,Handler,A,US-TX,Metrology,6,91351.22,26.9,0.8,548107.32
+2025Q3,NPI-Alpha,NanoParts,Spare,Handler,B,TW-Hsinchu,Deposition,6,11580.5,5.2,3.4,69483.0
+2025Q2,Ramp-Delta,NanoParts,Test,Jig,B,VN-BacNinh,Deposition,3,49167.34,15.5,1.2,147502.02
+2025Q3,NPI-Beta,Foxtron,Test,Jig,A,VN-BacNinh,Metrology,4,95146.45,15.7,0.4,380585.8
+2026Q2,Sustaining-Gamma,NanoParts,Tool,Chamber,C,TW-Hsinchu,Deposition,1,90392.85,10.2,1.1,90392.85
+2025Q4,Ramp-Delta,OptiWorks,Spare,Chamber,B,US-TX,Metrology,3,85118.07,10.4,0.3,255354.21
+2025Q3,NPI-Alpha,NanoParts,Fixture,Probe,C,US-TX,Etch,5,84679.55,22.3,0.7,423397.75
+2025Q2,Ramp-Delta,OptiWorks,Fixture,Probe,B,US-TX,Etch,5,14446.8,11.9,2.5,72234.0
+2026Q1,NPI-Alpha,OptiWorks,Spare,Chamber,A,TW-Hsinchu,Deposition,2,52596.89,17.3,0.3,105193.78
+2026Q2,Ramp-Delta,DeltaSupply,Fixture,ALD,A,US-CA,Litho,6,40457.2,18.7,0.8,242743.2
+2025Q3,NPI-Beta,Foxtron,Spare,Metrology,C,TW-Hsinchu,Metrology,1,25489.35,15.9,0.7,25489.35
+2025Q1,NPI-Alpha,Foxtron,Fixture,Probe,C,VN-BacNinh,Litho,3,111655.48,9.6,-0.5,334966.44
+2026Q4,NPI-Beta,NanoParts,Tool,Metrology,A,US-TX,Metrology,1,13298.59,5.6,0.8,13298.59
+2026Q4,Ramp-Delta,Foxtron,Spare,CVD,B,US-CA,Etch,3,71221.33,16.8,3.8,213663.99
+2026Q3,NPI-Beta,OptiWorks,Fixture,Metrology,C,US-TX,Litho,1,113471.93,22.8,-0.7,113471.93
+2025Q1,NPI-Alpha,NanoParts,Spare,CVD,A,TW-Hsinchu,Deposition,2,83811.59,12.0,2.0,167623.18
+2025Q2,Ramp-Delta,NanoParts,Test,Metrology,B,TW-Hsinchu,Metrology,4,26880.64,8.8,-0.3,107522.56
+2025Q1,Ramp-Delta,MechaFab,Tool,ALD,C,US-TX,Deposition,2,129042.3,6.8,1.2,258084.6
+2025Q2,Ramp-Delta,Foxtron,Tool,Handler,C,TW-Hsinchu,Litho,2,25138.04,11.3,0.7,50276.08
+2025Q1,NPI-Beta,OptiWorks,Fixture,Handler,C,TW-Hsinchu,Metrology,4,35636.78,4.5,1.9,142547.12
+2026Q1,Sustaining-Gamma,MechaFab,Test,Handler,A,VN-BacNinh,Metrology,1,25177.33,17.1,2.2,25177.33
+2025Q4,Ramp-Delta,NanoParts,Tool,Metrology,B,TW-Hsinchu,Metrology,2,143742.71,22.5,-0.5,287485.42
+2026Q1,Ramp-Delta,MechaFab,Tool,Probe,B,TW-Hsinchu,Litho,1,69019.53,14.2,1.6,69019.53
+2026Q4,NPI-Alpha,DeltaSupply,Test,ALD,B,US-CA,Metrology,2,39006.89,7.6,3.2,78013.78
+2025Q4,NPI-Beta,MechaFab,Tool,Probe,A,VN-BacNinh,Etch,1,37290.69,19.5,2.5,37290.69
+2025Q4,Sustaining-Gamma,MechaFab,Tool,CVD,B,VN-BacNinh,Deposition,2,54653.49,20.8,3.3,109306.98
+2026Q4,NPI-Alpha,Foxtron,Spare,Probe,B,TW-Hsinchu,Litho,2,71070.29,23.7,-0.8,142140.58
+2026Q2,NPI-Alpha,NanoParts,Spare,Chamber,A,TW-Hsinchu,Litho,3,95261.93,25.6,1.9,285785.79
+2025Q1,Sustaining-Gamma,Foxtron,Spare,Handler,B,US-TX,Deposition,2,116351.74,8.5,-0.1,232703.48
+2025Q2,Sustaining-Gamma,NanoParts,Tool,CVD,A,US-TX,Etch,1,122137.4,20.1,1.3,122137.4
+2025Q4,Ramp-Delta,Foxtron,Test,Probe,A,US-TX,Deposition,3,21781.51,16.6,1.5,65344.53
+2026Q1,NPI-Alpha,Foxtron,Tool,Handler,C,US-TX,Litho,1,99483.44,13.2,1.0,99483.44
+2025Q1,Ramp-Delta,OptiWorks,Tool,Handler,C,US-CA,Etch,2,63454.99,20.8,2.6,126909.98
+2026Q2,Ramp-Delta,DeltaSupply,Tool,Metrology,B,TW-Hsinchu,Litho,2,98723.11,4.2,-0.5,197446.22
+2025Q3,NPI-Alpha,NanoParts,Spare,ALD,B,US-CA,Litho,2,55121.53,11.9,4.0,110243.06
+2026Q4,NPI-Alpha,Foxtron,Tool,Probe,B,TW-Hsinchu,Etch,1,93097.05,9.0,1.6,93097.05
+2026Q3,NPI-Beta,Foxtron,Test,CVD,A,US-TX,Deposition,1,74560.39,27.7,1.6,74560.39
+2026Q1,NPI-Alpha,OptiWorks,Fixture,Handler,A,US-TX,Etch,4,72662.64,11.4,2.7,290650.56
+2026Q1,Ramp-Delta,DeltaSupply,Fixture,Jig,B,TW-Hsinchu,Metrology,5,42014.54,13.6,3.1,210072.7
+2025Q1,NPI-Beta,NanoParts,Fixture,ALD,B,VN-BacNinh,Metrology,1,111509.5,7.2,3.8,111509.5
+2026Q2,Sustaining-Gamma,OptiWorks,Test,Metrology,C,US-TX,Etch,1,94478.4,7.2,-0.7,94478.4
+2026Q2,Ramp-Delta,Foxtron,Spare,Probe,B,US-CA,Litho,6,90727.36,7.1,0.7,544364.16
+2026Q2,NPI-Beta,MechaFab,Test,Probe,C,US-CA,Metrology,3,95913.53,18.2,3.6,287740.59
+2025Q3,Ramp-Delta,Foxtron,Tool,Handler,B,US-CA,Metrology,2,138992.58,15.4,1.1,277985.16
+2026Q1,NPI-Alpha,OptiWorks,Spare,Jig,B,TW-Hsinchu,Etch,3,51756.66,15.1,0.9,155269.98
+2026Q2,NPI-Alpha,OptiWorks,Spare,Handler,A,TW-Hsinchu,Litho,4,72448.47,18.8,-0.6,289793.88
+2026Q2,Sustaining-Gamma,DeltaSupply,Fixture,Metrology,A,VN-BacNinh,Deposition,1,13313.51,18.4,1.5,13313.51
+2026Q1,Ramp-Delta,DeltaSupply,Spare,Handler,B,US-CA,Etch,4,114164.79,17.5,1.6,456659.16
+2025Q2,Ramp-Delta,NanoParts,Spare,Jig,B,US-TX,Litho,4,62511.86,12.8,2.1,250047.44
+2026Q2,NPI-Alpha,MechaFab,Test,Metrology,B,US-CA,Etch,5,27665.61,17.1,0.5,138328.05
+2026Q2,Ramp-Delta,MechaFab,Test,Probe,B,US-TX,Metrology,2,14739.03,15.3,-0.5,29478.06
+2025Q1,Ramp-Delta,Foxtron,Tool,Metrology,B,US-CA,Etch,2,122786.03,15.7,2.3,245572.06
+2025Q4,NPI-Beta,OptiWorks,Test,Probe,B,US-TX,Litho,4,75395.09,6.9,1.6,301580.36
+2025Q2,NPI-Alpha,Foxtron,Tool,ALD,C,VN-BacNinh,Metrology,2,118007.05,5.2,-0.9,236014.1
+2026Q2,NPI-Beta,MechaFab,Test,Metrology,A,TW-Hsinchu,Deposition,5,15058.52,9.4,2.1,75292.6
+2025Q1,NPI-Alpha,MechaFab,Spare,Chamber,B,US-CA,Metrology,1,77459.94,9.0,-0.8,77459.94
+2025Q3,Sustaining-Gamma,Foxtron,Spare,Metrology,B,TW-Hsinchu,Metrology,1,35207.92,11.8,2.6,35207.92
+2025Q4,Ramp-Delta,NanoParts,Spare,Jig,B,US-TX,Deposition,2,27031.52,11.6,-1.0,54063.04
+2026Q1,Ramp-Delta,DeltaSupply,Test,CVD,A,VN-BacNinh,Etch,4,80943.56,27.9,1.1,323774.24
+2026Q2,NPI-Beta,OptiWorks,Fixture,Handler,A,US-TX,Metrology,1,39262.88,5.4,3.0,39262.88
+2025Q4,NPI-Beta,Foxtron,Fixture,Metrology,B,US-TX,Metrology,4,101667.3,20.1,-0.2,406669.2
+2026Q2,NPI-Beta,OptiWorks,Spare,Jig,C,US-TX,Etch,4,64540.93,8.5,1.3,258163.72
+2025Q3,Sustaining-Gamma,DeltaSupply,Spare,Chamber,C,US-TX,Metrology,5,65141.72,6.5,2.8,325708.6
+2025Q2,Sustaining-Gamma,OptiWorks,Tool,Jig,B,US-TX,Etch,1,62007.24,5.7,-0.1,62007.24
+2025Q4,Sustaining-Gamma,MechaFab,Tool,CVD,B,TW-Hsinchu,Etch,1,18458.44,10.2,0.1,18458.44
+2025Q3,Ramp-Delta,NanoParts,Test,Handler,C,VN-BacNinh,Litho,3,27756.06,11.3,3.0,83268.18
+2026Q2,Ramp-Delta,Foxtron,Spare,ALD,C,VN-BacNinh,Etch,6,18942.16,9.8,0.4,113652.96
+2025Q4,NPI-Alpha,OptiWorks,Tool,Chamber,A,US-TX,Etch,1,60771.72,5.7,0.6,60771.72
+2025Q3,NPI-Beta,DeltaSupply,Spare,Jig,B,VN-BacNinh,Etch,1,20529.68,19.3,2.3,20529.68
+2025Q1,NPI-Alpha,MechaFab,Tool,CVD,B,US-TX,Etch,1,65676.56,18.9,4.0,65676.56
+2025Q4,Sustaining-Gamma,DeltaSupply,Tool,Metrology,C,VN-BacNinh,Metrology,2,102553.8,18.8,3.1,205107.6
+2026Q4,NPI-Alpha,MechaFab,Spare,Jig,B,US-TX,Metrology,2,12893.42,18.1,3.0,25786.84
+2026Q1,NPI-Beta,DeltaSupply,Fixture,Probe,B,TW-Hsinchu,Litho,1,26821.72,10.9,-0.5,26821.72
+2026Q1,NPI-Beta,MechaFab,Spare,Jig,B,US-TX,Deposition,5,85450.81,6.7,2.2,427254.05
+`;
+
+    const fmtUSD = (n) => {
+      if (!isFinite(n)) return "—";
+      return n.toLocaleString(undefined, {style:"currency", currency:"USD", maximumFractionDigits:0});
+    };
+    const fmtNum = (n, digits=1) => {
+      if (!isFinite(n)) return "—";
+      return n.toLocaleString(undefined, {maximumFractionDigits:digits});
+    };
+
+    function parseCSV(text){
+      const rows = [];
+      let cur = "", inQ = false, row = [];
+      for (let i=0;i<text.length;i++){
+        const ch = text[i], next = text[i+1];
+        if (ch === '"'){
+          if (inQ && next === '"'){ cur += '"'; i++; }
+          else inQ = !inQ;
+        } else if (ch === ',' && !inQ){
+          row.push(cur); cur="";
+        } else if ((ch === '\n' || ch === '\r') && !inQ){
+          if (ch === '\r' && next === '\n') i++;
+          row.push(cur); cur="";
+          if (row.some(v => v.trim().length)) rows.push(row);
+          row = [];
+        } else {
+          cur += ch;
+        }
+      }
+      row.push(cur);
+      if (row.some(v => v.trim().length)) rows.push(row);
+      return rows;
+    }
+    function toNumber(x){
+      if (x === null || x === undefined) return NaN;
+      const s = String(x).replace(/[$,]/g,"").trim();
+      if (!s) return NaN;
+      const n = Number(s);
+      return Number.isFinite(n) ? n : NaN;
+    }
+
+    function uniqSorted(arr){
+      return Array.from(new Set(arr)).sort((a,b)=>String(a).localeCompare(String(b), undefined, {numeric:true}));
+    }
+
+    function groupSum(rows, keyFn, valFn){
+      const m = new Map();
+      for (const r of rows){
+        const k = keyFn(r) ?? "—";
+        const v = valFn(r);
+        m.set(k, (m.get(k) || 0) + (isFinite(v) ? v : 0));
+      }
+      return m;
+    }
+    function groupAvg(rows, keyFn, valFn){
+      const s = new Map(), c = new Map();
+      for (const r of rows){
+        const k = keyFn(r) ?? "—";
+        const v = valFn(r);
+        if (!isFinite(v)) continue;
+        s.set(k, (s.get(k) || 0) + v);
+        c.set(k, (c.get(k) || 0) + 1);
+      }
+      const out = new Map();
+      for (const [k,sum] of s.entries()){
+        out.set(k, sum / (c.get(k) || 1));
+      }
+      return out;
+    }
+    function weightedAvg(rows, valFn, weightFn){
+      let num = 0, den = 0;
+      for (const r of rows){
+        const v = valFn(r), w = weightFn(r);
+        if (!isFinite(v) || !isFinite(w) || w<=0) continue;
+        num += v*w; den += w;
+      }
+      return den ? num/den : NaN;
+    }
+
+    function qKey(q){
+      // "2026Q2" -> 20262, used for sorting
+      const m = String(q).match(/^(\d{4})Q(\d)$/);
+      if (!m) return 0;
+      return Number(m[1])*10 + Number(m[2]);
+    }
+
+    // ====================== State ======================
+    const dims = [
+      ["YearQuarter","Quarter"],
+      ["Program_Name","Program"],
+      ["Supplier","Supplier"],
+      ["Asset_Class","Asset Class"],
+      ["Asset_Type","Asset Type"],
+      ["Criticality","Criticality"],
+      ["Fab_Location","Fab Location"],
+      ["Process_Area","Process Area"]
+    ];
+
+    const state = {
+      raw: [],
+      filtered: [],
+      // multi-select filters: {col: Set(values)}
+      filters: Object.fromEntries(dims.map(([c])=>[c, new Set()])),
+      sort: { col: "CapEx_USD", dir: "desc" },
+      search: "",
+      chipSearch: ""
+    };
+
+    function activeFilterCount(){
+      let n=0;
+      for (const [col] of dims){
+        if (state.filters[col].size) n++;
+      }
+      return n;
+    }
+
+    function contextText(){
+      const parts = [];
+      for (const [col, label] of dims){
+        const s = state.filters[col];
+        if (s.size){
+          const arr = Array.from(s).slice(0,3);
+          const more = s.size > 3 ? ` +${s.size-3}` : "";
+          parts.push(`${label}: ${arr.join(", ")}${more}`);
+        }
+      }
+      return parts.length ? parts.join(" • ") : "All data";
+    }
+
+    function applyFilters(){
+      state.filtered = state.raw.filter(r => {
+        for (const [col] of dims){
+          const set = state.filters[col];
+          if (set.size && !set.has(String(r[col] ?? ""))) return false;
+        }
+        if (state.search){
+          const s = state.search.toLowerCase();
+          const hay = `${r.YearQuarter} ${r.Program_Name} ${r.Supplier} ${r.Asset_Class} ${r.Asset_Type} ${r.Criticality} ${r.Fab_Location} ${r.Process_Area}`.toLowerCase();
+          if (!hay.includes(s)) return false;
+        }
+        return true;
+      });
+      document.getElementById("contextPill").textContent = contextText();
+      const _rowPill = document.getElementById("rowPill");
+      if (_rowPill) _rowPill.textContent = `${state.filtered.length.toLocaleString()} rows`;
+      document.getElementById("activeFilterPill").textContent = `${activeFilterCount()} active`;
+    }
+
+    // ====================== Filters UI (chips) ======================
+    function buildFilters(){
+      const root = document.getElementById("filters");
+      root.innerHTML = "";
+      for (const [col, label] of dims){
+        const group = document.createElement("div");
+        group.className = "filter-group";
+        group.innerHTML = `
+          <div class="fg-title">
+            <span>${label}</span>
+            <span class="tiny" id="cnt_${col}">0</span>
+          </div>
+          <div class="chips" id="chips_${col}"></div>
+        `;
+        root.appendChild(group);
+      }
+    }
+
+    function renderChips(){
+      const needle = (state.chipSearch || "").toLowerCase().trim();
+      for (const [col] of dims){
+        const el = document.getElementById(`chips_${col}`);
+        const values = uniqSorted(state.raw.map(r => String(r[col] ?? "—")).filter(v => v && v !== "—"));
+        const shown = needle ? values.filter(v => v.toLowerCase().includes(needle)) : values;
+        const capped = shown.slice(0, 80); // keep UI fast; search narrows
+        el.innerHTML = "";
+        for (const v of capped){
+          const chip = document.createElement("div");
+          chip.className = "chip" + (state.filters[col].has(v) ? " on" : "");
+          chip.textContent = v;
+          chip.title = "Click to toggle filter";
+          chip.addEventListener("click", ()=>{
+            if (state.filters[col].has(v)) state.filters[col].delete(v);
+            else state.filters[col].add(v);
+            applyFilters();
+            renderAll();
+            renderChips(); // update states
+          });
+          el.appendChild(chip);
+        }
+        document.getElementById(`cnt_${col}`).textContent = `${state.filters[col].size} selected`;
+      }
+    }
+
+    function clearFilters(){
+      for (const [col] of dims) state.filters[col].clear();
+      state.search = "";
+      document.getElementById("tableSearch").value = "";
+      applyFilters();
+      renderAll();
+      renderChips();
+    }
+
+    // ====================== KPIs (with deltas) ======================
+    function computeKPIs(rows){
+      const totalCapex = rows.reduce((a,r)=>a + (toNumber(r.CapEx_USD)||0), 0);
+      const assetsCount = rows.length;
+      const programsCount = new Set(rows.map(r => r.Program_Name)).size;
+      const suppliersCount = new Set(rows.map(r => r.Supplier)).size;
+
+      const avgLead = (() => {
+        const vals = rows.map(r => toNumber(r.Lead_Time_Weeks)).filter(v => isFinite(v));
+        return vals.length ? vals.reduce((a,v)=>a+v,0)/vals.length : NaN;
+      })();
+      const wAvgLead = weightedAvg(
+        rows,
+        r => toNumber(r.Lead_Time_Weeks),
+        r => {
+          const qty = toNumber(r.Qty), cost = toNumber(r.Unit_Cost_USD);
+          return (isFinite(qty)?qty:0) * (isFinite(cost)?cost:0);
+        }
+      );
+      const avgUnitCost = (() => {
+        const vals = rows.map(r => toNumber(r.Unit_Cost_USD)).filter(v => isFinite(v));
+        return vals.length ? vals.reduce((a,v)=>a+v,0)/vals.length : NaN;
+      })();
+      const avgGap = (() => {
+        const vals = rows.map(r => toNumber(r.Gap_Quarters)).filter(v => isFinite(v));
+        return vals.length ? vals.reduce((a,v)=>a+v,0)/vals.length : NaN;
+      })();
+
+      return { totalCapex, assetsCount, programsCount, suppliersCount, avgLead, wAvgLead, avgUnitCost, avgGap };
+    }
+
+    function quarterDeltas(rows){
+      // Compute KPI for latest quarter vs previous quarter within current filter context (ignoring explicit YearQuarter selection).
+      const qs = uniqSorted(rows.map(r => r.YearQuarter)).sort((a,b)=>qKey(a)-qKey(b));
+      if (!qs.length) return {latest:null, prev:null, cur:null, prior:null};
+      const latest = qs[qs.length-1];
+      const prev = qs.length > 1 ? qs[qs.length-2] : null;
+
+      const curRows = rows.filter(r => r.YearQuarter === latest);
+      const prevRows = prev ? rows.filter(r => r.YearQuarter === prev) : [];
+
+      return {
+        latest, prev,
+        cur: computeKPIs(curRows),
+        prior: prev ? computeKPIs(prevRows) : null
+      };
+    }
+
+    function renderKPIs(){
+      const grid = document.getElementById("kpiGrid");
+      const all = computeKPIs(state.filtered);
+      const d = quarterDeltas(state.filtered);
+
+      document.getElementById("qPill").textContent = d.latest ? `Latest quarter: ${d.latest}${d.prev ? ` • prev: ${d.prev}` : ""}` : "Latest quarter: —";
+
+      function deltaStr(cur, prior, isMoney=false, digits=1){
+        if (!prior || !isFinite(cur) || !isFinite(prior) || prior === 0) return {txt:"—", cls:""};
+        const pct = (cur - prior) / Math.abs(prior) * 100;
+        const arrow = pct >= 0 ? "▲" : "▼";
+        const cls = pct >= 0 ? "up" : "down";
+        const v = (pct >= 0 ? pct : -pct);
+        return {txt:`${arrow} ${fmtNum(v,1)}%`, cls};
+      }
+
+      const items = [
+        ["Total CapEx", fmtUSD(all.totalCapex), d.cur?.totalCapex, d.prior?.totalCapex, true, 0, "SUM(CapEx_USD)"],
+        ["Assets", fmtNum(all.assetsCount,0), d.cur?.assetsCount, d.prior?.assetsCount, false, 0, "COUNTROWS"],
+        ["Programs", fmtNum(all.programsCount,0), d.cur?.programsCount, d.prior?.programsCount, false, 0, "DISTINCTCOUNT Program"],
+        ["Suppliers", fmtNum(all.suppliersCount,0), d.cur?.suppliersCount, d.prior?.suppliersCount, false, 0, "DISTINCTCOUNT Supplier"],
+        ["Avg Lead (wks)", fmtNum(all.avgLead,1), d.cur?.avgLead, d.prior?.avgLead, false, 1, "AVERAGE Lead_Time_Weeks"],
+        ["Wtd Avg Lead (wks)", fmtNum(all.wAvgLead,1), d.cur?.wAvgLead, d.prior?.wAvgLead, false, 1, "Weighted by Qty×UnitCost"],
+        ["Avg Unit Cost", fmtUSD(all.avgUnitCost), d.cur?.avgUnitCost, d.prior?.avgUnitCost, true, 0, "AVERAGE Unit_Cost_USD"],
+        ["Avg Gap (qtrs)", fmtNum(all.avgGap,2), d.cur?.avgGap, d.prior?.avgGap, false, 2, "AVERAGE Gap_Quarters"],
+      ];
+
+      grid.innerHTML = "";
+      for (const [label, value, cur, prior, isMoney, digits, meta] of items){
+        const dlt = deltaStr(cur, prior, isMoney, digits);
+        const el = document.createElement("div");
+        el.className = "kpi";
+        el.innerHTML = `
+          <div class="label">${label}</div>
+          <div class="value">${value}</div>
+          <div class="delta">
+            <span class="${dlt.cls}">${dlt.txt}</span>
+            <span class="tiny">${meta}</span>
+          </div>
+        `;
+        grid.appendChild(el);
+      }
+    }
+
+    // ====================== Charts (ECharts) ======================
+    const charts = {};
+    function getChart(id){
+      if (!charts[id]) charts[id] = echarts.init(document.getElementById(id), null, {renderer:'canvas'});
+      return charts[id];
+    }
+    function setCommon(chart){
+      chart.setOption({
+        backgroundColor: 'transparent',
+        textStyle: { color: '#eef2ff', fontFamily: 'ui-sans-serif, system-ui' },
+        tooltip: { trigger: 'item', borderColor: 'rgba(38,52,95,.85)', backgroundColor: 'rgba(12,20,43,.95)' },
+        toolbox: {
+          right: 8, top: 6,
+          feature: { saveAsImage: { title: 'Save' } },
+          iconStyle: { borderColor: '#a7b0d6' }
+        },
+        animationDuration: 450,
+        animationEasing: 'cubicOut'
+      }, {notMerge:false});
+    }
+
+    function toggleFilter(col, value){
+      value = String(value);
+      const s = state.filters[col];
+      if (s.has(value)) s.delete(value);
+      else s.add(value);
+      applyFilters();
+      renderAll();
+      renderChips();
+    }
+
+    function renderCharts(){
+      // Trend
+      const byQ = groupSum(state.filtered, r => r.YearQuarter, r => toNumber(r.CapEx_USD));
+      const qLabels = Array.from(byQ.keys()).sort((a,b)=>qKey(a)-qKey(b));
+      const qVals = qLabels.map(k => byQ.get(k));
+
+      const trend = getChart("chartTrend");
+      setCommon(trend);
+      trend.setOption({
+        grid: { left: 54, right: 18, top: 34, bottom: 46 },
+        xAxis: { type:'category', data: qLabels, axisLine:{lineStyle:{color:'rgba(38,52,95,.9)'}}, axisLabel:{color:'#a7b0d6'} },
+        yAxis: { type:'value', axisLine:{show:false}, splitLine:{lineStyle:{color:'rgba(38,52,95,.35)'}}, axisLabel:{color:'#a7b0d6'} },
+        series: [{
+          type:'line',
+          data: qVals,
+          smooth:true,
+          symbolSize: 8,
+          lineStyle:{ width:3, color:'#7aa2ff' },
+          areaStyle:{
+            color: new echarts.graphic.LinearGradient(0,0,0,1,[
+              {offset:0, color:'rgba(122,162,255,.35)'},
+              {offset:1, color:'rgba(122,162,255,.02)'},
+            ])
+          }
+        }]
+      });
+      trend.off('click');
+      trend.on('click', params => {
+        if (params?.name) toggleFilter("YearQuarter", params.name);
+      });
+
+      // Stacked mix by asset class
+      const qs = qLabels;
+      const classes = uniqSorted(state.filtered.map(r=>r.Asset_Class));
+      const stackData = classes.map(cls => {
+        const m = new Map(qs.map(q=>[q,0]));
+        for (const r of state.filtered){
+          if (r.Asset_Class !== cls) continue;
+          const q = r.YearQuarter;
+          m.set(q, (m.get(q)||0) + (toNumber(r.CapEx_USD)||0));
+        }
+        return { name: cls, type:'bar', stack:'capex', emphasis:{focus:'series'}, data: qs.map(q=>m.get(q)||0) };
+      });
+
+      const stack = getChart("chartStack");
+      setCommon(stack);
+      stack.setOption({
+        grid: { left: 54, right: 18, top: 34, bottom: 46 },
+        tooltip: { trigger:'axis', axisPointer:{type:'shadow'} },
+        legend: { top: 34, textStyle:{color:'#a7b0d6'} },
+        xAxis: { type:'category', data: qs, axisLabel:{color:'#a7b0d6'}, axisLine:{lineStyle:{color:'rgba(38,52,95,.9)'}} },
+        yAxis: { type:'value', axisLabel:{color:'#a7b0d6'}, splitLine:{lineStyle:{color:'rgba(38,52,95,.35)'}} },
+        series: stackData
+      });
+      stack.off('click');
+      stack.on('click', params => {
+        if (params?.seriesName) toggleFilter("Asset_Class", params.seriesName);
+      });
+
+      // Treemap by program
+      const byP = groupSum(state.filtered, r=>r.Program_Name, r=>toNumber(r.CapEx_USD));
+      const treeData = Array.from(byP.entries())
+        .sort((a,b)=>b[1]-a[1])
+        .slice(0, 18)
+        .map(([name, value]) => ({ name, value }));
+
+      const tree = getChart("chartTree");
+      setCommon(tree);
+      tree.setOption({
+        tooltip: { formatter: (p)=> `${p.name}<br/><b>${fmtUSD(p.value)}</b>` },
+        series: [{
+          type: 'treemap',
+          roam: false,
+          nodeClick: false,
+          breadcrumb: { show:false },
+          label: { show:true, color:'#eef2ff', overflow:'truncate' },
+          upperLabel: { show:false },
+          itemStyle: { borderColor: 'rgba(7,10,18,.55)', borderWidth: 2, gapWidth: 2 },
+          levels: [
+            { itemStyle: { borderColor: 'rgba(7,10,18,.6)', borderWidth: 2 } }
+          ],
+          data: treeData
+        }]
+      });
+      tree.off('click');
+      tree.on('click', params => {
+        if (params?.name) toggleFilter("Program_Name", params.name);
+      });
+
+      // Scatter: lead vs unit cost, bubble size = capex, color = criticality
+      const critColors = { "A":"#ff6b6b", "B":"#ffcc66", "C":"#42d392" };
+      const scatterSeries = ["A","B","C"].map(c => {
+        const pts = state.filtered.filter(r=>String(r.Criticality)===c).slice(0, 500).map(r=>{
+          const x = toNumber(r.Unit_Cost_USD);
+          const y = toNumber(r.Lead_Time_Weeks);
+          const s = toNumber(r.CapEx_USD);
+          return [x, y, s, r.Supplier, r.Asset_Type, r.Program_Name];
+        }).filter(p => isFinite(p[0]) && isFinite(p[1]) && isFinite(p[2]));
+        return {
+          name: `Crit ${c}`,
+          type:'scatter',
+          data: pts,
+          symbolSize: (val)=>{
+            const v = val[2] || 0;
+            return Math.max(7, Math.min(28, Math.sqrt(v)/420));
+          },
+          itemStyle:{ color: critColors[c] || '#7aa2ff', opacity: .8 }
+        };
+      });
+
+      const scatter = getChart("chartScatter");
+      setCommon(scatter);
+      scatter.setOption({
+        grid: { left: 54, right: 18, top: 34, bottom: 46 },
+        legend: { top: 34, textStyle:{color:'#a7b0d6'} },
+        xAxis: {
+          type:'value',
+          name:'Unit Cost ($)',
+          nameTextStyle:{color:'#a7b0d6'},
+          axisLabel:{color:'#a7b0d6'},
+          splitLine:{lineStyle:{color:'rgba(38,52,95,.35)'}}
+        },
+        yAxis: {
+          type:'value',
+          name:'Lead Time (wks)',
+          nameTextStyle:{color:'#a7b0d6'},
+          axisLabel:{color:'#a7b0d6'},
+          splitLine:{lineStyle:{color:'rgba(38,52,95,.35)'}}
+        },
+        tooltip: {
+          formatter: (p)=>{
+            const [x,y,s, supplier, at, prog] = p.value;
+            return `<b>${prog}</b><br/>${supplier} • ${at}<br/>Unit: ${fmtUSD(x)}<br/>Lead: ${fmtNum(y,1)} wks<br/>CapEx: ${fmtUSD(s)}`;
+          }
+        },
+        series: scatterSeries
+      });
+      scatter.off('click');
+      scatter.on('click', params => {
+        // click filters by criticality series
+        const name = params?.seriesName || "";
+        const m = name.match(/Crit\s([ABC])/);
+        if (m) toggleFilter("Criticality", m[1]);
+      });
+
+      // Heatmap: CapEx by Fab x Process
+      const fabs = uniqSorted(state.filtered.map(r=>r.Fab_Location));
+      const procs = uniqSorted(state.filtered.map(r=>r.Process_Area));
+      const heat = [];
+      const heatMax = {v:0};
+      for (let i=0;i<fabs.length;i++){
+        for (let j=0;j<procs.length;j++){
+          let sum = 0;
+          for (const r of state.filtered){
+            if (r.Fab_Location===fabs[i] && r.Process_Area===procs[j]) sum += (toNumber(r.CapEx_USD)||0);
+          }
+          heat.push([j, i, sum]);
+          if (sum > heatMax.v) heatMax.v = sum;
+        }
+      }
+
+      const heatChart = getChart("chartHeat");
+      setCommon(heatChart);
+      heatChart.setOption({
+        grid: { left: 110, right: 18, top: 34, bottom: 46 },
+        xAxis: { type:'category', data: procs, axisLabel:{color:'#a7b0d6'} },
+        yAxis: { type:'category', data: fabs, axisLabel:{color:'#a7b0d6'} },
+        visualMap: {
+          min: 0, max: heatMax.v || 1,
+          calculable: true,
+          orient: 'horizontal',
+          left: 'center',
+          bottom: 8,
+          textStyle: { color:'#a7b0d6' },
+          inRange: { color: ['rgba(122,162,255,.08)','rgba(122,162,255,.35)','rgba(66,211,146,.75)'] }
+        },
+        tooltip: {
+          formatter: (p)=>{
+            const x = procs[p.value[0]];
+            const y = fabs[p.value[1]];
+            return `<b>${y}</b> • ${x}<br/>CapEx: ${fmtUSD(p.value[2])}`;
+          }
+        },
+        series: [{
+          type:'heatmap',
+          data: heat,
+          emphasis: { itemStyle: { borderColor:'#eef2ff', borderWidth:1 } }
+        }]
+      });
+      heatChart.off('click');
+      heatChart.on('click', params => {
+        const x = procs[params.value[0]];
+        const y = fabs[params.value[1]];
+        if (x) toggleFilter("Process_Area", x);
+        if (y) toggleFilter("Fab_Location", y);
+      });
+
+      // Suppliers bar: CapEx (bar) and Wtd Avg lead (line)
+      const byS = groupSum(state.filtered, r=>r.Supplier, r=>toNumber(r.CapEx_USD));
+      const topS = Array.from(byS.entries()).sort((a,b)=>b[1]-a[1]).slice(0, 10);
+      const sLabels = topS.map(x=>x[0]);
+      const sCap = topS.map(x=>x[1]);
+      const sLead = sLabels.map(sup => {
+        const rows = state.filtered.filter(r=>r.Supplier===sup);
+        return weightedAvg(rows, r=>toNumber(r.Lead_Time_Weeks), r=>{
+          const qty=toNumber(r.Qty), cost=toNumber(r.Unit_Cost_USD);
+          return (isFinite(qty)?qty:0)*(isFinite(cost)?cost:0);
+        });
+      });
+
+      const supChart = getChart("chartSup");
+      setCommon(supChart);
+      supChart.setOption({
+        grid: { left: 54, right: 18, top: 34, bottom: 60 },
+        tooltip: { trigger:'axis' },
+        xAxis: { type:'category', data: sLabels, axisLabel:{color:'#a7b0d6', rotate: 22}, axisLine:{lineStyle:{color:'rgba(38,52,95,.9)'}} },
+        yAxis: [
+          { type:'value', axisLabel:{color:'#a7b0d6'}, splitLine:{lineStyle:{color:'rgba(38,52,95,.35)'}} },
+          { type:'value', axisLabel:{color:'#a7b0d6'}, splitLine:{show:false} }
+        ],
+        series: [
+          { name:'CapEx', type:'bar', data: sCap, itemStyle:{ color:'#7aa2ff', opacity:.85 }, emphasis:{focus:'series'} },
+          { name:'Wtd Lead (wks)', type:'line', yAxisIndex: 1, data: sLead, smooth:true, symbolSize:8, lineStyle:{width:3, color:'#42d392'} }
+        ]
+      });
+      supChart.off('click');
+      supChart.on('click', params => {
+        if (params?.name) toggleFilter("Supplier", params.name);
+      });
+
+      // Keep charts responsive
+      window.addEventListener('resize', ()=>{
+        for (const c of Object.values(charts)) c.resize();
+      }, {passive:true});
+    }
+
+    // ====================== Table ======================
+    const tableCols = [
+      ["YearQuarter","Quarter"],
+      ["Program_Name","Program"],
+      ["Supplier","Supplier"],
+      ["Asset_Class","Asset Class"],
+      ["Asset_Type","Asset Type"],
+      ["Criticality","Crit"],
+      ["Fab_Location","Fab"],
+      ["Process_Area","Process"],
+      ["Qty","Qty"],
+      ["Unit_Cost_USD","Unit Cost"],
+      ["Lead_Time_Weeks","Lead (wks)"],
+      ["Gap_Quarters","Gap (qtrs)"],
+      ["CapEx_USD","CapEx"]
+    ];
+
+    function sortRows(rows){
+      const {col, dir} = state.sort;
+      const mult = dir === "asc" ? 1 : -1;
+      return [...rows].sort((a,b)=>{
+        const av = a[col], bv = b[col];
+        const an = toNumber(av), bn = toNumber(bv);
+        if (isFinite(an) && isFinite(bn)) return (an - bn)*mult;
+        return String(av ?? "").localeCompare(String(bv ?? ""), undefined, {numeric:true})*mult;
+      });
+    }
+
+    function renderTable(){
+      const t = document.getElementById("dataTable");
+      const rows = sortRows(state.filtered);
+      const sliced = rows.slice(0, 300); // keep performance snappy
+
+      const thead = document.createElement("thead");
+      const trh = document.createElement("tr");
+      for (const [col, label] of tableCols){
+        const th = document.createElement("th");
+        th.textContent = label + (state.sort.col === col ? (state.sort.dir==="asc" ? " ▲" : " ▼") : "");
+        th.addEventListener("click", ()=>{
+          if (state.sort.col === col) state.sort.dir = state.sort.dir === "asc" ? "desc" : "asc";
+          else { state.sort.col = col; state.sort.dir = "desc"; }
+          renderTable();
+        });
+        trh.appendChild(th);
+      }
+      thead.appendChild(trh);
+
+      const tbody = document.createElement("tbody");
+      for (const r of sliced){
+        const tr = document.createElement("tr");
+        for (const [col] of tableCols){
+          const td = document.createElement("td");
+          let v = r[col];
+          if (col === "Unit_Cost_USD" || col === "CapEx_USD") { td.className="right"; v = fmtUSD(toNumber(v)); }
+          else if (col === "Lead_Time_Weeks") { td.className="right"; v = fmtNum(toNumber(v),1); }
+          else if (col === "Gap_Quarters") { td.className="right"; v = fmtNum(toNumber(v),2); }
+          else if (col === "Qty") { td.className="right"; v = fmtNum(toNumber(v),0); }
+          td.textContent = (v === undefined || v === null || v === "") ? "—" : v;
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+
+      t.innerHTML = "";
+      t.appendChild(thead);
+      t.appendChild(tbody);
+
+      const k = computeKPIs(state.filtered);
+      document.getElementById("tableFoot").textContent =
+        `Showing ${sliced.length} of ${state.filtered.length.toLocaleString()} filtered rows • Total CapEx: ${fmtUSD(k.totalCapex)} • Avg Lead: ${fmtNum(k.avgLead,1)} wks`;
+    }
+
+    // ====================== Export ======================
+    function exportFilteredCSV(){
+      const cols = expectedCols;
+      const lines = [];
+      lines.push(cols.join(","));
+      for (const r of state.filtered){
+        const row = cols.map(c => {
+          const v = r[c] ?? "";
+          const s = String(v);
+          if (s.includes(",") || s.includes('"') || s.includes("\n")){
+            return '"' + s.replace(/"/g,'""') + '"';
+          }
+          return s;
+        });
+        lines.push(row.join(","));
+      }
+      const blob = new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "capex_filtered.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    async function exportSnapshot(){
+      // Use ECharts built-in getDataURL for a representative snapshot (trend chart). For full-page snapshot we'd need html2canvas.
+      const c = getChart("chartTrend");
+      const url = c.getDataURL({ pixelRatio: 2, backgroundColor: '#070a12' });
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "capex_dashboard_snapshot.png";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    // ====================== Load/Validate ======================
+    function validateColumns(headers){
+      const h = new Set(headers);
+      const missing = expectedCols.filter(c => !h.has(c));
+      return missing;
+    }
+
+    function loadFromCSVText(csvText){
+      const parsed = parseCSV(csvText);
+      if (!parsed.length) throw new Error("CSV looks empty.");
+      const headers = parsed[0].map(h => h.trim());
+      const missing = validateColumns(headers);
+      if (missing.length) throw new Error("Missing required columns: " + missing.join(", "));
+
+      const idx = Object.fromEntries(headers.map((h,i)=>[h,i]));
+      const out = [];
+      for (let i=1;i<parsed.length;i++){
+        const row = parsed[i];
+        const r = {};
+        for (const c of expectedCols) r[c] = row[idx[c]] ?? "";
+        // numeric normalize
+        r.Qty = toNumber(r.Qty);
+        r.Unit_Cost_USD = toNumber(r.Unit_Cost_USD);
+        r.Lead_Time_Weeks = toNumber(r.Lead_Time_Weeks);
+        r.Gap_Quarters = toNumber(r.Gap_Quarters);
+        const cap = toNumber(r.CapEx_USD);
+        r.CapEx_USD = isFinite(cap) ? cap : (r.Qty * r.Unit_Cost_USD);
+        // normalize dims to strings
+        for (const [col] of dims) r[col] = String(r[col] ?? "");
+        out.push(r);
+      }
+      state.raw = out;
+      clearFilters();
+      renderChips();
+      applyFilters();
+      renderAll();
+    }
+
+    // ====================== Render all ======================
+    function renderAll(){
+      renderKPIs();
+      renderCharts();
+      renderTable();
+      document.getElementById("contextPill").textContent = contextText();
+    }
+
+    // ====================== Events ======================
+    document.getElementById("fileInput").addEventListener("change", async (e)=>{
+      const f = e.target.files?.[0];
+      if (!f) return;
+      const text = await f.text();
+      try{ loadFromCSVText(text); }
+      catch(err){ alert("Could not load CSV:\n\n" + err.message); }
+    });
+
+    document.getElementById("loadSampleBtn").addEventListener("click", ()=>{
+      try{ loadFromCSVText(embeddedSample); }
+      catch(err){ alert("Could not load sample:\n\n" + err.message); }
+    });
+
+    document.getElementById("clearBtn").addEventListener("click", clearFilters);
+
+    document.getElementById("tableSearch").addEventListener("input", (e)=>{
+      state.search = e.target.value || "";
+      applyFilters();
+      renderAll();
+    });
+
+    document.getElementById("filterSearch").addEventListener("input", (e)=>{
+      state.chipSearch = e.target.value || "";
+      renderChips();
+    });
+
+    document.getElementById("exportFilteredCsv").addEventListener("click", exportFilteredCSV);
+    document.getElementById("exportSnapshot").addEventListener("click", exportSnapshot);
+
+    // ====================== Init ======================
+    (function init(){
+      buildFilters();
+      loadFromCSVText(embeddedSample);
+    })();
+  </script>
+</body>
+</html>

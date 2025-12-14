@@ -1,0 +1,36 @@
+YearQuarter,Program_Name,Supplier,Asset_Class,Asset_Type,Criticality,Fab_Location,Process_Area,Qty,Unit_Cost_USD,Lead_Time_Weeks,Gap_Quarters,CapEx_USD
+2025Q1,7nm Logic NPI,Applied Materials,New,CVD 3000 PECVD Chamber,High,Fab A - Line 1,Pioneer CVD,2,1250000,18,2,2500000
+2025Q2,7nm Logic NPI,Applied Materials,New,CVD 3100 HDP System,High,Fab A - Line 2,Pioneer CVD,1,1580000,22,3,1580000
+2025Q1,LPDDR6 DRAM,Tokyo Electron,New,PVD 2200 Metallization,High,Fab B - Line 3,Metals,3,980000,20,3,2940000
+2025Q3,Capacity Add 300mm,Lam Research,New,Dry Etch 1800,Medium,Fab B - Line 1,Etch,1,875000,16,2,875000
+2025Q2,Power Device NPI,Axcelis,New,Ion Implanter 900,High,Fab C - Pilot,Implant,1,1960000,28,3,1960000
+2025Q2,Capacity Add 300mm,Hitachi High-Tech,New,Plasma Ash 750,Medium,Fab A - Line 1,Clean,2,420000,14,2,840000
+2025Q3,Yield Improvement 5nm,Ebara,New,CMP Polisher 450,High,Fab B - Line 2,CMP,1,1360000,24,3,1360000
+2025Q1,3nm Logic NPI,ASML,New,Stepper 5500,High,Fab A - Line 3,Lithography,1,4200000,36,4,4200000
+2025Q2,3nm Logic NPI,SCREEN,New,Coat/Develop Track 300,High,Fab A - Line 3,Lithography,1,1650000,30,3,1650000
+2025Q3,R&D Prototyping,Picosun,New,Thermal ALD 1200,Medium,Fab B - R&D,ALD,1,690000,20,3,690000
+2025Q1,Yield Improvement 5nm,Hitachi High-Tech,New,CD-SEM 700,High,Fab A - Line 1,CD-SEM,1,1350000,20,3,1350000
+2025Q2,3nm Logic NPI,KLA,New,Overlay Tool 500,High,Fab B - Line 3,Overlay,1,1120000,22,3,1120000
+2025Q3,Power Device NPI,Bruker,New,XRF Thickness Measurement,Medium,Fab C - Pilot,XRF,1,420000,18,2,420000
+2025Q1,Yield Improvement 5nm,KLA,New,Wafer Inspection 900,High,Fab B - Line 1,Inspection,1,2100000,26,3,2100000
+2025Q1,Material Handling Upgrade,SCHUNK,New,Robot EOAT Kit - FOUP Handling,Medium,Fab A - Line 1,Automation,12,8500,8,1,102000
+2025Q1,Capacity Add 300mm,Entegris,New,Wafer Carrier Set 300mm,Medium,Fab B - Line 2,Handling,80,950,6,1,76000
+2025Q2,R&D Prototyping,Local Vendor,New,Vacuum Chuck Set,Low,Fab C - Pilot,Process,20,3200,10,1,64000
+2025Q1,5S & Layout Optimization,SSI Schaefer,New,Tooling Storage Rack,Low,Fab A - Warehouse,Facilities,6,5800,4,1,34800
+2025Q2,Fixture Reuse Program,Internal,Reuse,Retrofitted Etch Fixture Set,Medium,Fab B - Line 1,Reuse,5,0,0,0,0
+2025Q2,Fixture Reuse Program,Internal,Reuse,CVD Lift Plate Reuse,Medium,Fab A - Line 2,Reuse,10,0,0,1,0
+2025Q1,R&D Prototyping,Keysight,New,High Voltage PSU Rack,Medium,Fab C - Lab,Lab,2,68000,12,2,136000
+2025Q2,R&D Prototyping,Tektronix,New,Mixed Signal Scope 8GHz,Low,Fab C - Lab,Lab,3,42000,10,1,126000
+2025Q1,Power Device NPI,Cascade Microtech,New,Parametric Probe Station,Medium,Fab B - Lab,Lab,1,185000,20,3,185000
+2025Q1,Capacity Add 300mm,Trane,New,Process Chiller 350kW,High,Fab A - Utility,Facilities,1,420000,24,4,420000
+2025Q2,EHS Compliance Upgrade,BOC Edwards,New,Exhaust Scrubber System,High,Fab B - Utility,Facilities,1,380000,26,3,380000
+2025Q3,Future Capacity Prep,Evoqua,New,DI Water Polish Unit,Medium,Fab C - Utility,Facilities,1,295000,22,3,295000
+2025Q3,7nm Logic NPI,Applied Materials,New,CVD 3000 PECVD Chamber (Upside),High,Fab A - Line 1,Pioneer CVD,1,1250000,18,2,1250000
+2025Q4,LPDDR6 DRAM,Tokyo Electron,New,PVD 2200 Metallization (Downside),Medium,Fab B - Line 3,Metals,1,980000,20,2,980000
+2025Q2,Capacity Add 300mm,Entegris,New,Wafer Carrier Set 300mm (Upside),Medium,Fab B - Line 2,Handling,40,950,6,1,38000
+2025Q3,Yield Improvement 5nm,Hitachi High-Tech,New,CD-SEM 700 (Upside),High,Fab A - Line 2,CD-SEM,1,1350000,20,2,1350000
+2025Q1,5S & Layout Optimization,Local Vendor,New,Cleanroom Transport Cart,Low,Fab A - Fab,Handling,25,1200,4,0,30000
+2025Q2,Capacity Add 300mm,Murata Machinery,New,Vertical FOUP Rack,Medium,Fab A - Bay 2,Handling,15,3400,6,0,51000
+2025Q2,Maintenance Productivity,Local Vendor,New,Tooling Cart – Maintenance,Low,Fab B - Maintenance,Maintenance,10,2100,5,0,21000
+2025Q1,Fixture Reuse Program,Internal,Reuse,Legacy CVD 2500 Move,Medium,Fab C - Pilot,Reuse,1,0,0,1,0
+2025Q2,Fixture Reuse Program,Internal,Reuse,Legacy Metrology Relocation,Low,Fab B - Line 1,Reuse,1,0,0,1,0

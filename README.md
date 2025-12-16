@@ -39,8 +39,7 @@ This project turns CapEx line-items into **decision-ready insights**:
 - Export **filtered CSV** for analysis
 - Drill into the **detail table** (sort + search)
 
-### Add your screenshots here
-> Put images in `docs/images/` and update the paths below.
+### Screenshots here
 
 ![Dashboard Preview](docs/images/dashboard_preview.png)
 ![Heatmap Example](docs/images/heatmapfabprocess.png)

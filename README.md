@@ -43,7 +43,7 @@ This project turns CapEx line-items into **decision-ready insights**:
 > Put images in `docs/images/` and update the paths below.
 
 ![Dashboard Preview](docs/images/dashboard_preview.png)
-![Heatmap Example](docs/images/heatmap_fab_process.png)
+![Heatmap Example](docs/images/heatmapfabprocess.png)
 ![Treemap Example](docs/images/treemap_programs.png)
 
 ---

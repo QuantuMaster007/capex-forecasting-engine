@@ -148,13 +148,4 @@ See: `docs/model_explanation.md`
 - [ ] Add risk scoring (lead time × criticality × spend exposure)
 - [ ] Add one-click “Exec Summary” export (PNG/PDF)
 
-
-
-## 📊 Dashboard Upload Schema
-The HTML dashboard expects a CSV with columns:
-`YearQuarter, Program_Name, Supplier, Asset_Class, Asset_Type, Criticality, Fab_Location, Process_Area, Qty, Unit_Cost_USD, Lead_Time_Weeks, Gap_Quarters, CapEx_USD`
-
-**Ready-to-upload sample (generated from `data/sample_capex_input.xlsx`):**
-- `exports_dashboard_line_items.csv`
-
-> Tip: Put this file under `exports/` (or `data/`) in your repo so anyone can open the dashboard and immediately upload a working sample dataset.
+---

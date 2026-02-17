@@ -141,11 +141,34 @@ The notebook expects fields like:
 See: `docs/model_explanation.md`
 
 ---
+---
 
-## 🗺️ Roadmap (optional)
-- [ ] Add budget vs actual variance
-- [ ] Add scenario toggles inside the HTML dashboard (Base/Upside/Downside)
-- [ ] Add risk scoring (lead time × criticality × spend exposure)
-- [ ] Add one-click “Exec Summary” export (PNG/PDF)
+## 🤝 Contributing
+
+This is a demonstration project for portfolio/interview purposes. If you'd like to extend it:
+
+1. Fork the repository
+2. Create a feature branch
+3. Add enhancements (new models, visualizations, data sources)
+4. Submit a pull request
+
+---
+
+## 📧 Contact
+
+Let's connect! Whether you have a question or just want to say hi, feel free to reach out.
+
+| Platform | Link |
+| :--- | :--- |
+| **👤 Name** | Sourabh Tarodekar |
+| **✉️ Email** | [sourabh232@gmail.com](mailto:sourabh232@gmail.com) |
+| **💼 LinkedIn** | [linkedin.com/in/sourabh232](https://www.linkedin.com/in/sourabh232) |
+| **🚀 Portfolio** | [QuantuMaster007 Portfolio](https://github.com/QuantuMaster007/sourabh232.git) |
+
+---
+
+## 📄 License
+
+MIT License - See LICENSE file for details
 
 ---
